@@ -1,0 +1,41 @@
+bot_id: qqq_ic_extension
+version: 0.1.0
+status: thesis_only
+thesis_file: proposals/2026-04-19-qqq-ic-extension.md
+
+underlying:
+  class: A
+  symbol: QQQ
+
+structure:
+  type: iron_condor
+  short_call_delta: 0.16
+  long_call_delta: 0.05
+  short_put_delta: 0.16
+  long_put_delta: 0.05
+
+regime_gates:
+  - {type: vix_level_max, value: 28}
+  - {type: vix_vix3m_max, value: 1.00}
+  - {type: vix_10d_high_max, value: 35}
+  - {type: vix_1d_change_max, value: 0.20}
+  - {type: ivp_min, value: 30}
+  - {type: regime_score_max, value: 3}
+  - {type: earnings_blackout, value: false}
+  - {type: fomc_cpi_nfp_blackout, value: true}
+
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: "09:45"
+
+exit:
+  profit_target_pct: 50
+  stop_loss_credit_multiple: 2.0
+  time_exit_dte: 14
+  regime_flip_exit: true
+
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 3
+  allocation_usd: 12000

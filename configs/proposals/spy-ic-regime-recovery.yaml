@@ -1,0 +1,38 @@
+bot_id: spy_ic_regime_recovery
+version: 0.1.0
+status: thesis_only
+thesis_file: proposals/2026-04-19-spy-ic-regime-recovery.md
+
+underlying:
+  class: A
+  symbol: SPY
+
+structure:
+  type: iron_condor
+  short_call_delta: 0.16
+  long_call_delta: 0.05
+  short_put_delta: 0.16
+  long_put_delta: 0.05
+
+regime_gates:
+  - {type: regime_transition_from, value: [ORANGE, RED]}
+  - {type: regime_transition_to, value: [GREEN, YELLOW]}
+  - {type: vix_max, value: 30}              # cap entry VIX even on transition
+  - {type: vix_vix3m_max, value: 1.05}      # allow some residual backwardation
+  - {type: ivp_min, value: 40}              # premium still rich post-spike
+
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: "09:45"
+
+exit:
+  profit_target_pct: 50
+  stop_loss_credit_multiple: 1.75
+  time_exit_dte: 14
+  regime_flip_exit: true                     # close immediately if regime re-elevates
+
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 2
+  allocation_usd: 8000

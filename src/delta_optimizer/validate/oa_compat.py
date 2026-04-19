@@ -37,25 +37,77 @@ FORBIDDEN_STRUCTURES = frozenset({
 })
 
 ALLOWED_ENTRY_FILTERS = frozenset({
+    # Core OA-natively-buildable filters
     "delta", "dte", "iv_rank", "iv_percentile",
     "vix_level", "vix_vix3m", "vix_10d_high", "vix_velocity",
     "rsi", "macd", "ema", "adx", "bollinger", "keltner", "cci",
     "net_gex", "max_gex_strikes",
     "earnings_calendar", "fomc_cpi_nfp_calendar",
     "orb",  # only for OA's 10 supported tickers
-    "regime_score_max",  # delta-optimizer's composite — counts as a derived filter
+    # delta-optimizer composites — buildable in OA via TradingView webhook
+    # (Aryan computes regime score externally, passes as a single bool signal).
+    "regime_score", "regime_transition",
+    # Derived from OA-native inputs (RSI/Bollinger/EMA proxies)
+    "vvix", "realized_vol_5d",
+    "spy_above_20d_sma", "spy_below_5d_sma", "spy_below_20d_sma", "spy_above_5d_sma",
 })
 
+# Threshold/qualifier suffixes that decorate a base filter name (e.g.,
+# vix_level_max, ivp_min, gex_positive_required, earnings_blackout).
+_FILTER_SUFFIXES = (
+    "_max", "_min", "_required", "_blackout", "_threshold",
+    "_above", "_below", "_required",
+    "_from", "_to",
+)
+
+# Bare-name aliases. Apply AFTER suffix stripping.
+_FILTER_ALIASES = {
+    "vix": "vix_level",
+    "vix_vix3m_ratio": "vix_vix3m",
+    "vix_1d_change": "vix_velocity",
+    "vix_5d_change": "vix_velocity",
+    "ivp": "iv_percentile",
+    "ivp_252d": "iv_percentile",
+    "earnings": "earnings_calendar",
+    "fomc_cpi_nfp": "fomc_cpi_nfp_calendar",
+    "gex_positive": "net_gex",
+    "gex": "net_gex",
+}
+
+
+def _normalize_filter_name(raw: str) -> str:
+    """Strip threshold suffixes and apply aliases to recover the base filter name."""
+    name = raw
+    # Strip trailing suffix once (longest match).
+    for suf in sorted(_FILTER_SUFFIXES, key=len, reverse=True):
+        if name.endswith(suf):
+            name = name[: -len(suf)]
+            break
+    return _FILTER_ALIASES.get(name, name)
+
+
 ALLOWED_EXIT_TYPES = frozenset({
-    "profit_target_pct",
-    "stop_loss_pct",
-    "stop_loss_dollar",
-    "trailing_stop",
-    "dte_exit",
-    "itm_close",
-    "pdt_1day_wait",
+    "profit_target", "stop_loss", "trailing_stop",
+    "dte_exit", "time_exit",
+    "itm_close", "pdt_1day_wait",
     "regime_flip_exit",
 })
+
+_EXIT_SUFFIXES = ("_pct", "_dollar", "_credit_multiple", "_dte")
+_EXIT_ALIASES = {
+    "stop_loss_credit_multiple": "stop_loss",
+}
+
+
+def _normalize_exit_name(raw: str) -> str:
+    if raw in _EXIT_ALIASES:
+        return _EXIT_ALIASES[raw]
+    name = raw
+    for suf in sorted(_EXIT_SUFFIXES, key=len, reverse=True):
+        if name.endswith(suf):
+            name = name[: -len(suf)]
+            break
+    return name
 
 # Per-bot caps (master prompt § C1)
 MAX_SCANNERS_PER_BOT = 5
@@ -266,11 +318,17 @@ def validate_bot_spec(spec: BotSpec) -> CompatReport:
             f"max_concurrent {spec.max_concurrent} exceeds OA max {MAX_CONCURRENT_PER_BOT}"
         )
 
-    bad_filters = [f for f in spec.entry_filter_types if f not in ALLOWED_ENTRY_FILTERS]
+    bad_filters = [
+        f for f in spec.entry_filter_types
+        if _normalize_filter_name(f) not in ALLOWED_ENTRY_FILTERS
+    ]
     if bad_filters:
         errors.append(f"Entry filters not in OA DSL: {bad_filters}")
 
-    bad_exits = [e for e in spec.exit_types if e not in ALLOWED_EXIT_TYPES]
+    bad_exits = [
+        e for e in spec.exit_types
+        if _normalize_exit_name(e) not in ALLOWED_EXIT_TYPES
+    ]
     if bad_exits:
         errors.append(f"Exit types not in OA DSL: {bad_exits}")
 

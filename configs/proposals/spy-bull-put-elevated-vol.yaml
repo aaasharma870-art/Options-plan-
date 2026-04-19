@@ -1,0 +1,39 @@
+bot_id: spy_bull_put_elevated_vol
+version: 0.1.0
+status: thesis_only
+thesis_file: proposals/2026-04-19-spy-bull-put-elevated-vol.md
+
+underlying:
+  class: A
+  symbol: SPY
+
+structure:
+  type: vertical_credit
+  side_bias: bullish
+  short_put_delta: 0.16
+  long_put_delta: 0.05
+
+regime_gates:
+  - {type: vix_level_min, value: 20}      # elevated vol required
+  - {type: vix_level_max, value: 32}
+  - {type: vix_vix3m_max, value: 1.00}
+  - {type: ivp_min, value: 40}
+  - {type: spy_above_20d_sma, value: true}  # directional overlay
+  - {type: regime_score_max, value: 4}
+  - {type: fomc_cpi_nfp_blackout, value: true}
+
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: "09:45"
+
+exit:
+  profit_target_pct: 50
+  stop_loss_credit_multiple: 2.0
+  time_exit_dte: 14
+  regime_flip_exit: true
+
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 3
+  allocation_usd: 8000

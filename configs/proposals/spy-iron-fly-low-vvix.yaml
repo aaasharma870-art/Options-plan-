@@ -1,0 +1,40 @@
+bot_id: spy_iron_fly_low_vvix
+version: 0.1.0
+status: thesis_only
+thesis_file: proposals/2026-04-19-spy-iron-fly-low-vvix.md
+
+underlying:
+  class: A
+  symbol: SPY
+
+structure:
+  type: iron_butterfly
+  short_call_delta: 0.50
+  long_call_delta: 0.10
+  short_put_delta: 0.50
+  long_put_delta: 0.10
+
+regime_gates:
+  - {type: vix_level_max, value: 22}
+  - {type: vix_vix3m_max, value: 0.95}    # deep contango required
+  - {type: ivp_min, value: 30}
+  - {type: vvix_max, value: 110}          # vol-of-vol gate (custom)
+  - {type: realized_vol_5d_max, value: 0.12}  # tight tape (custom)
+  - {type: regime_score_max, value: 2}    # GREEN-low only
+  - {type: fomc_cpi_nfp_blackout, value: true}
+
+entry:
+  dte_min: 7
+  dte_max: 14
+  scan_time: "10:30"  # avoid first-30-min noise
+
+exit:
+  profit_target_pct: 25
+  stop_loss_credit_multiple: 1.5
+  time_exit_dte: 1
+  regime_flip_exit: true
+
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 2
+  allocation_usd: 6000

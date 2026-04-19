@@ -70,19 +70,42 @@ class SyntheticBSMChain:
     # decrease (i.e., put IVs rise with negative moneyness). Calibrated to roughly
     # match SPY OTM put-IV elevations seen in 2022-2024.
 
+    # Stress-clip activation thresholds (calibrated against Aryan Optimized 77.7% WR).
+    stress_vix_1d_change_threshold: float = 0.05   # 5% VIX 1d move (was 10%)
+    stress_vix_vix3m_threshold: float = 1.00       # backwardation
+    stress_spy_1d_change_threshold: float = 0.005  # 0.5% SPY 1d move (was 1%)
+    stress_iv_realized_multiplier: float = 2.5     # IV floor = realized_5d × this when stressed (was 1.5)
+    # Asymmetric: down-moves spike vol HARDER than up-moves (vol smile asymmetry).
+    down_move_iv_multiplier: float = 1.4  # additional IV bump when SPY 1d < -1%
+    down_move_threshold: float = -0.01     # SPY 1d return triggering down-move bump
+    # Put-skew asymmetry: when stressed, OTM put IVs steepen non-linearly.
+    stress_put_skew_multiplier: float = 3.0  # multiplies skew slope for puts on stress days
+
     def __post_init__(self) -> None:
         self.data_dir = Path(self.data_dir)
         self._loader = CachedDataLoader(self.data_dir)
         self._vix: pd.Series | None = None
+        self._vix3m: pd.Series | None = None
         self._skew: pd.Series | None = None
         self._spy: pd.Series | None = None
+        self._spy_5d_rv: pd.Series | None = None
+        self._spy_1d_change: pd.Series | None = None
+        self._vix_1d_change: pd.Series | None = None
         self._underlying_caches: dict[str, pd.Series] = {}
 
     def _ensure(self) -> None:
         if self._vix is None:
+            import numpy as np
+
             self._vix = self._loader.yahoo_index("VIX")["close"]
+            self._vix3m = self._loader.yahoo_index("VIX3M")["close"]
             self._skew = self._loader.yahoo_index("SKEW")["close"]
             self._spy = self._loader.polygon_ohlc("SPY")["close"]
+            # Pre-compute stress signals once.
+            spy_log_ret = np.log(self._spy / self._spy.shift(1))
+            self._spy_5d_rv = spy_log_ret.rolling(5).std(ddof=1) * np.sqrt(252)
+            self._spy_1d_change = self._spy.pct_change()
+            self._vix_1d_change = self._vix.pct_change()
 
     def _underlying_close(self, underlying: str, as_of: date) -> float | None:
         """SPY close for SPY; for others (Phase 3) load from cache lazily."""
@@ -131,15 +154,69 @@ class SyntheticBSMChain:
         skew_value = float(eligible.iloc[-1])
         return self.skew_slope_per_skew_unit * (skew_value - 100.0)
 
-    def iv_for(self, as_of: date, S: float, K: float, T: float) -> float:
-        """IV for a given (date, spot, strike, T-years). Term-scaled, skew-adjusted."""
+    def _is_stressed(self, as_of: date) -> bool:
+        """True if the day is in a stressed vol regime (any of three triggers)."""
+        self._ensure()
+        ts = pd.Timestamp(as_of)
+        # SPY 1d change
+        spy_chg = self._spy_1d_change.loc[:ts]
+        if not spy_chg.empty and abs(spy_chg.iloc[-1]) > self.stress_spy_1d_change_threshold:
+            return True
+        # VIX 1d change
+        vix_chg = self._vix_1d_change.loc[:ts]
+        if not vix_chg.empty and abs(vix_chg.iloc[-1]) > self.stress_vix_1d_change_threshold:
+            return True
+        # VIX/VIX3M backwardation
+        vix_today = self._vix.loc[:ts]
+        vix3m_today = self._vix3m.loc[:ts]
+        if not vix_today.empty and not vix3m_today.empty:
+            ratio = float(vix_today.iloc[-1]) / float(vix3m_today.iloc[-1])
+            if ratio > self.stress_vix_vix3m_threshold:
+                return True
+        return False
+
+    def _stressed_iv_floor(self, as_of: date) -> float:
+        """When stressed, IV floor = SPY 5d realized × multiplier. Captures the
+        IV-realized divergence on shock days that pure VIX (forward-looking)
+        misses. Returns 0.0 if no realized data."""
+        self._ensure()
+        ts = pd.Timestamp(as_of)
+        rv = self._spy_5d_rv.loc[:ts]
+        if rv.empty or pd.isna(rv.iloc[-1]):
+            return 0.0
+        return float(rv.iloc[-1]) * self.stress_iv_realized_multiplier
+
+    def iv_for(
+        self, as_of: date, S: float, K: float, T: float,
+        option_type: OptionType | None = None,
+    ) -> float:
+        """IV for a given (date, spot, strike, T-years). Term-scaled, skew-adjusted,
+        and stress-clipped + asymmetric on shock days (calibrated to match Aryan
+        Optimized's real 77.7% WR rather than the synthetic-clean 93%)."""
         atm = self._atm_iv_30d(as_of)
         if atm is None:
             raise ValueError(f"no VIX cached at {as_of}")
+        # Stress clip: replace ATM IV with max(VIX, realized_5d × multiplier) on shock days.
+        stressed = self._is_stressed(as_of)
+        if stressed:
+            floor = self._stressed_iv_floor(as_of)
+            if floor > atm:
+                atm = floor
+        # Asymmetric: down-moves spike vol harder.
+        self._ensure()
+        ts = pd.Timestamp(as_of)
+        spy_chg_series = self._spy_1d_change.loc[:ts]
+        if not spy_chg_series.empty and not pd.isna(spy_chg_series.iloc[-1]):
+            spy_chg = float(spy_chg_series.iloc[-1])
+            if spy_chg < self.down_move_threshold:
+                atm = atm * self.down_move_iv_multiplier
         # Term scaling: VIX is 30d. Scale by sqrt(T_days / 30).
         T_days = max(T * 365.0, 1.0)
         term_factor = math.sqrt(T_days / 30.0)
         skew = self._skew_slope(as_of)
+        # Put-side skew steepens further on stress days (vol smile asymmetry).
+        if stressed and option_type == OptionType.PUT:
+            skew = skew * self.stress_put_skew_multiplier
         # Negative moneyness (puts OTM = K < S) gets HIGHER IV under positive skew.
         moneyness = (K - S) / S
         iv = atm * term_factor + skew * (-moneyness)
@@ -156,7 +233,7 @@ class SyntheticBSMChain:
         T = max((expiration - as_of).days / 365.0, 1 / 365.0)
         if T <= 0:
             return None
-        sigma = self.iv_for(as_of, S, strike, T)
+        sigma = self.iv_for(as_of, S, strike, T, option_type=option_type)
         flag = "call" if option_type == OptionType.CALL else "put"
         mid = bsm_price(S, strike, T, self.risk_free_rate, sigma, flag, q=0.0)
         d = bsm_delta(S, strike, T, self.risk_free_rate, sigma, flag, q=0.0)
@@ -236,7 +313,7 @@ class SyntheticBSMChain:
             if S is None:
                 return Decimal(0)
             T = max((exp - as_of).days / 365.0, 1 / 365.0)
-            sigma = self.iv_for(as_of, S, float(leg.strike), T)
+            sigma = self.iv_for(as_of, S, float(leg.strike), T, option_type=leg.option_type)
             flag = "call" if leg.option_type == OptionType.CALL else "put"
             mid = bsm_price(S, float(leg.strike), T, self.risk_free_rate, sigma, flag, q=0.0)
             sign = 1 if leg.side.value == "long" else -1

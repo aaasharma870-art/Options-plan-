@@ -1,0 +1,39 @@
+bot_id: spy_bear_call_post_spike_fade
+version: 0.1.0
+status: thesis_only
+thesis_file: proposals/2026-04-19-spy-bear-call-post-spike-fade.md
+
+underlying:
+  class: A
+  symbol: SPY
+
+structure:
+  type: vertical_credit
+  side_bias: bearish
+  short_call_delta: 0.16
+  long_call_delta: 0.05
+
+regime_gates:
+  - {type: vix_5d_change_min, value: 0.15}      # spike happened in last 5d
+  - {type: spy_below_5d_sma, value: true}        # failed bounce
+  - {type: vix_vix3m_min, value: 0.95}
+  - {type: vix_vix3m_max, value: 1.05}
+  - {type: ivp_min, value: 40}
+  - {type: regime_score_max, value: 5}
+  - {type: fomc_cpi_nfp_blackout, value: true}
+
+entry:
+  dte_min: 14
+  dte_max: 21
+  scan_time: "10:30"
+
+exit:
+  profit_target_pct: 35
+  stop_loss_credit_multiple: 2.0
+  time_exit_dte: 5
+  regime_flip_exit: true
+
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 2
+  allocation_usd: 7000
