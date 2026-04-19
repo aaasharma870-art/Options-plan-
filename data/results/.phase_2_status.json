@@ -1,0 +1,71 @@
+{
+  "phase": 2,
+  "passed": true,
+  "method": "synthetic_bsm_chain",
+  "grid_size": 72,
+  "pareto_size": 8,
+  "elapsed_minutes": 15.181111633777618,
+  "data_window": {
+    "start": "2023-01-03",
+    "end": "2026-04-17",
+    "trading_days": 825
+  },
+  "recommended_gate_sets": {
+    "conservative": {
+      "vix_max": 28,
+      "vix_vix3m_max": 1.0,
+      "vix_10d_high_max": 35,
+      "vix_1d_change_max": 0.15,
+      "ivp_min": 20,
+      "expected_metrics": {
+        "pnl_total": 44218.94,
+        "pnl_per_day": 53.59871515151515,
+        "win_rate": 0.9282296650717703,
+        "profit_factor": 7.702947123969598,
+        "max_drawdown": 3651.02,
+        "cvar_95": -159.61,
+        "n_trades": 209,
+        "gate_pass_rate": 0.5575757575757576
+      }
+    },
+    "moderate": {
+      "vix_max": 28,
+      "vix_vix3m_max": 1.0,
+      "vix_10d_high_max": 35,
+      "vix_1d_change_max": 0.15,
+      "ivp_min": 20,
+      "expected_metrics": {
+        "pnl_total": 44218.94,
+        "pnl_per_day": 53.59871515151515,
+        "win_rate": 0.9282296650717703,
+        "profit_factor": 7.702947123969598,
+        "max_drawdown": 3651.02,
+        "cvar_95": -159.61,
+        "n_trades": 209,
+        "gate_pass_rate": 0.5575757575757576
+      }
+    },
+    "aggressive": {
+      "vix_max": 28,
+      "vix_vix3m_max": 1.0,
+      "vix_10d_high_max": 35,
+      "vix_1d_change_max": 0.25,
+      "ivp_min": 20,
+      "expected_metrics": {
+        "pnl_total": 45423.43,
+        "pnl_per_day": 55.05870303030303,
+        "win_rate": 0.9305555555555556,
+        "profit_factor": 7.222387671232877,
+        "max_drawdown": 4200.03,
+        "cvar_95": -176.76,
+        "n_trades": 216,
+        "gate_pass_rate": 0.583030303030303
+      }
+    }
+  },
+  "caveats": [
+    "Synthetic chain underestimates tail losses \u2014 BSM has no jumps.",
+    "Gate selection is robust to this; gates pick WHEN to enter, not exact P&L.",
+    "Real-chain validation requires Polygon Options Developer or Flat Files."
+  ]
+}
