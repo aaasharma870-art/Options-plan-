@@ -1,0 +1,31 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Data lake and raw pulls — large, reproducible from cache
+data/raw/
+data/lake/
+data/results/phase_*/backtest_runs/
+data/results/**/*.parquet
+data/results/**/*.png
+
+# Allow results index/status files (small, informative)
+!data/results/.phase_*_status.json
+!data/results/**/README.md
+
+# Checkpoints are markdown reports — keep them
+!checkpoints/*.md
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
