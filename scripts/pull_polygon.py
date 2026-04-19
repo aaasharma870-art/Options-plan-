@@ -39,6 +39,7 @@ if str(SRC) not in sys.path:
 load_dotenv(ROOT / ".env")
 
 from delta_optimizer.ingest.polygon_client import PolygonClient  # noqa: E402
+from delta_optimizer.ingest.yfinance_client import YAHOO_INDEX_SYMBOLS, YFinanceClient  # noqa: E402
 
 app = typer.Typer(
     add_completion=False,
@@ -47,7 +48,8 @@ app = typer.Typer(
 
 console = Console()
 
-INDEX_TICKERS = ["I:VIX", "I:VIX3M", "I:VVIX", "I:SKEW"]
+# Indices come from Yahoo (Polygon Stocks/Options Starter doesn't include I:VIX etc.)
+INDEX_NAMES = list(YAHOO_INDEX_SYMBOLS.keys())
 OHLC_UNDERLYINGS = ["SPY", "QQQ", "IWM", "AAPL", "MSFT", "NVDA", "META", "GOOGL", "AMZN", "TSLA"]
 SINGLE_NAMES = ["AAPL", "MSFT", "NVDA", "META", "GOOGL", "AMZN", "TSLA"]
 DEFAULT_START = "2022-01-01"
@@ -86,8 +88,8 @@ def _trading_days(start: str, end: str) -> list[date]:
     return days
 
 
-def _pull_index(client: PolygonClient, start: str, end: str, dry: bool) -> None:
-    console.rule(f"[bold]index aggs[/bold] {start} -> {end}")
+def _pull_index(yclient: YFinanceClient, start: str, end: str, dry: bool) -> None:
+    console.rule(f"[bold]index aggs (Yahoo)[/bold] {start} -> {end}")
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -95,12 +97,16 @@ def _pull_index(client: PolygonClient, start: str, end: str, dry: bool) -> None:
         TimeElapsedColumn(),
         console=console,
     ) as prog:
-        t = prog.add_task("indices", total=len(INDEX_TICKERS))
-        for tkr in INDEX_TICKERS:
+        t = prog.add_task("indices", total=len(INDEX_NAMES))
+        for name in INDEX_NAMES:
+            yahoo_sym = YAHOO_INDEX_SYMBOLS[name]
             if dry:
-                console.print(f"  [dim]would pull[/dim] {tkr}")
+                console.print(f"  [dim]would pull[/dim] {name} ({yahoo_sym})")
             else:
-                client.aggs_daily(tkr, start, end)
+                try:
+                    yclient.daily_close(yahoo_sym, start, end)
+                except Exception as e:  # noqa: BLE001
+                    console.print(f"[red]  failed[/red] {name}: {e}")
             prog.update(t, advance=1)
 
 
@@ -187,6 +193,7 @@ def main(
     _setup_logging(log_path)
 
     client = PolygonClient(cache_dir=ROOT / "data" / "raw")
+    yclient = YFinanceClient(cache_dir=ROOT / "data" / "raw")
 
     console.print(
         f"[bold]delta-optimizer pull[/bold] dataset={dataset} start={start} end={end} "
@@ -196,7 +203,7 @@ def main(
     console.print(f"  bucket: {client.bucket.capacity}/min (will probe on first call)")
 
     if dataset in ("index", "all"):
-        _pull_index(client, start, end, dry_run)
+        _pull_index(yclient, start, end, dry_run)
     if dataset in ("ohlc", "all"):
         _pull_ohlc(client, start, end, dry_run)
     if dataset in ("earnings", "all"):
