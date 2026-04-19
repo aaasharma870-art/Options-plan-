@@ -1,0 +1,80 @@
+{
+  "phase": 1,
+  "passed": true,
+  "result": {
+    "passed": true,
+    "n_total": 819,
+    "n_per_bucket": {
+      "YELLOW": 435,
+      "GREEN": 271,
+      "ORANGE": 70,
+      "RED": 43
+    },
+    "fwd_rv_mean_per_bucket": {
+      "GREEN": 0.11801453765817162,
+      "ORANGE": 0.18365251895988627,
+      "RED": 0.24924821447743647,
+      "YELLOW": 0.11350645525933753
+    },
+    "fwd_rv_std_per_bucket": {
+      "GREEN": 0.05815892596830212,
+      "ORANGE": 0.15792962370035277,
+      "RED": 0.18962719819908977,
+      "YELLOW": 0.05057801198054688
+    },
+    "anova_p": 1.1283671730062918e-29,
+    "anova_F": 50.01089553914443,
+    "cohens_d_green_vs_red": 1.4890156514154478,
+    "thresholds": {
+      "vix_low": 17.0,
+      "vix_high": 22.0,
+      "ivp_low_red": 30.0,
+      "ivp_low_yellow": 50.0,
+      "ivp_high_yellow": 80.0,
+      "ivp_high_red": 90.0,
+      "vix_vix3m_yellow": 0.95,
+      "vix_vix3m_red": 1.0,
+      "p_threshold": 0.01,
+      "d_threshold": 0.5
+    },
+    "notes": []
+  },
+  "threshold_iterations": [
+    {
+      "iteration": 0,
+      "thresholds": {
+        "vix_low": 17.0,
+        "vix_high": 22.0,
+        "ivp_low_red": 30.0,
+        "ivp_low_yellow": 50.0,
+        "ivp_high_yellow": 80.0,
+        "ivp_high_red": 90.0,
+        "vix_vix3m_yellow": 0.95,
+        "vix_vix3m_red": 1.0,
+        "p_threshold": 0.01,
+        "d_threshold": 0.5
+      },
+      "passed": true,
+      "anova_p": 1.1283671730062918e-29,
+      "cohens_d_green_vs_red": 1.4890156514154478
+    }
+  ],
+  "data_window": {
+    "start": "2022-01-03",
+    "end": "2026-04-17",
+    "trading_days": 1076
+  },
+  "factors_used": [
+    "vix_level",
+    "vix_iv_percentile_252d",
+    "vix_vix3m"
+  ],
+  "factors_deferred": [
+    "spx_net_gex"
+  ],
+  "notes": [
+    "Phase 1 runs a 3-factor regime classifier.",
+    "GEX is deferred until Phase 2 chain backfill \u2014 see Checkpoint 0.",
+    "IV Percentile uses VIX (which IS SPY's 30-day ATM IV) over a 252d window."
+  ]
+}
