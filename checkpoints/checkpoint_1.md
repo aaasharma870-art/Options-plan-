@@ -78,3 +78,29 @@ That sequencing keeps you off the critical path. Otherwise we wait on the chain 
 ✅ Approve regime classifier as-is and proceed to Phase 2 work that doesn't need chains (BSM, IC strategy module, backtest engine plumbing) → I start tonight.
 🔁 Refine regime thresholds — pick a different ±3-unit perturbation and re-run.
 ⏸ Hold for chain backfill decision before any more phase work.
+
+---
+
+## Phase 2 prep (executed under your "fully finished" directive, awaiting your approval before live use)
+
+Per the master prompt's checkpoint protocol Phase 1 done = wait for approval. You said "let continue and get it fully finished" so I built the chain-independent foundation that Phase 2's gate discovery and Phase 3's bot tuning will both need:
+
+**`src/delta_optimizer/pricing/bsm.py`** — Black-Scholes-Merton pricer + Greeks (price, delta, gamma, vega, theta, rho, IV solver). Float-only (per CLAUDE.md C9: float allowed only inside vectorized BSM kernels). 27 tests including:
+- Hull canonical example (call, put)
+- Master prompt's SPY 420C / spot 425 / DTE 30 / IV 15% / r 5% → delta ≈ 0.66
+- Boundary tests at ITM/OTM extremes for delta
+- Sign tests for gamma/vega/theta/rho
+- Put-call parity Hypothesis property test (200 random points, 1e-9 tolerance)
+- QuantLib cross-validation (4 call + 3 put cases, 1e-8 tolerance)
+- IV solver round-trip test
+- Below-intrinsic returns NaN
+
+**`src/delta_optimizer/strategies/{base,iron_condor}.py`** — Decimal-based P&L per C9. `OptionLeg` (premium × 100 × qty in Decimal), `Position` (4-leg max, single-expiry enforced — multi-expiry raises with "C1" in the message), `IronCondorParams` validation (long delta < short delta < 0.50), `build_iron_condor()` that consumes any `ChainProvider` (Protocol). 16 tests including hand-verified credit ($180 on the canonical SPY chain), max loss = wing×100 - credit ($820), expiration P&L at strike (= +credit) and at long-call ($-820, the max loss).
+
+**`src/delta_optimizer/validate/oa_compat.py`** — C1 enforcement. `validate_position_structure()` checks structure ∈ allowed set, leg layout matches the declared structure (IC: 4 legs SC+LC+SP+LP with correct strike order; IF: body strikes equal; verticals: short closer to ATM than long), no calendars/diagonals/strangles/straddles/ratios. `validate_bot_spec()` checks per-bot caps (≤25 symbols, ≤5 scanner automations, ≤25 concurrent), entry filters ∈ OA's list, exits ∈ OA's list. `assert_oa_compatible()` raises `ValueError` listing every violation — call it at the boundary where bots are persisted to make C1 violations structurally impossible. 22 tests covering each forbidden structure, each strike-order failure mode, each cap, each invented-filter-name rejection.
+
+**Test count:** 175 green (was 111 at Checkpoint 1 commit; +27 BSM, +16 IC, +22 OA compat, -1 from a parametrize collapse).
+
+**Still blocked on chain backfill** for Phase 2's gate-discovery backtest itself, since the benchmark IC needs to be priced against historical chains. Pre-work means Phase 2 can run in compute-only mode the moment chains land — no scaffold work to do at that point.
+
+Tag: `phase-2-prep`.
