@@ -88,4 +88,4 @@ So roughly half of Phase 1 can start with what's cached. The other half waits on
 ## Open log
 
 - The Polygon `X-RateLimit-Limit` header was absent on every response we saw. The bucket stays conservative at 4/min until either the header appears or you tell me your plan's actual limit. Want me to assume 5/min flat?
-- `optuna-screener/.env` had `POLYGON_API_KEY=REDACTED-ROTATE-KEY-IMMEDIATELY`. Same key was copied into `delta-optimizer/.env`. Both `MASSIVE_API_KEY` and `POLYGON_API_KEY` resolve in code; neither file is in git.
+- `optuna-screener/.env` had a `POLYGON_API_KEY=...` value. Same key was copied into `delta-optimizer/.env`. Both `MASSIVE_API_KEY` and `POLYGON_API_KEY` env var names resolve in code; neither file is in git (both `.env` files are gitignored).
