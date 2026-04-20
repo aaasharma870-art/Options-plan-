@@ -1,0 +1,37 @@
+bot_id: aryan_optimized_legacy
+version: legacy
+status: legacy_baseline
+note: |
+  Reconstructed from PROJECT_BRIEF.md context: 16-20D short / 5-10D long IC,
+  30-45 DTE, 288 trades (real history), 77.7% WR, 2.77 PF, 7.27 raw Sharpe.
+  CRITICAL: this bot has NO regime gate. That is exactly what caused the
+  $9k VIX-spike loss the project was started to prevent. We model it
+  ungated to compare against the regime-gated Phase 3 bots.
+
+underlying:
+  class: A
+  symbol: SPY
+
+structure:
+  type: iron_condor
+  short_call_delta: 0.18    # midpoint of 16-20D
+  long_call_delta: 0.07     # midpoint of 5-10D
+  short_put_delta: 0.18
+  long_put_delta: 0.07
+
+regime_gates: []  # intentionally empty — this is the legacy ungated baseline
+
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: "09:45"
+
+exit:
+  profit_target_pct: 50
+  stop_loss_credit_multiple: 2.0
+  time_exit_dte: 21
+
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 3
+  allocation_usd: 10000

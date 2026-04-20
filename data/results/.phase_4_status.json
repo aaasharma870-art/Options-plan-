@@ -1,0 +1,213 @@
+{
+  "phase": 4,
+  "starting_capital": 50000.0,
+  "n_bots": 7,
+  "bot_ids": [
+    "qqq-ic-extension",
+    "spy-bear-call-post-spike-fade",
+    "spy-bull-put-elevated-vol",
+    "spy-ic-regime-recovery",
+    "spy-iron-fly-low-vvix",
+    "spy-tight-ic-aggressive",
+    "aryan_optimized_legacy"
+  ],
+  "methods": {
+    "equal_weight": {
+      "weights": {
+        "qqq-ic-extension": 0.14285714285714285,
+        "spy-bear-call-post-spike-fade": 0.14285714285714285,
+        "spy-bull-put-elevated-vol": 0.14285714285714285,
+        "spy-ic-regime-recovery": 0.14285714285714285,
+        "spy-iron-fly-low-vvix": 0.14285714285714285,
+        "spy-tight-ic-aggressive": 0.14285714285714285,
+        "aryan_optimized_legacy": 0.14285714285714285
+      },
+      "sharpe": 5.033580542317178,
+      "max_dd_dollar": 1718.7685714285763,
+      "max_dd_pct": 0.03437537142857153,
+      "p95_daily_loss": -0.002767302857142857,
+      "worst_day": -774.592857142857,
+      "worst_day_date": "2025-05-12",
+      "circuit_breaker_days": 0,
+      "aggregate_passes": {
+        "max_dd_lt_15pct": true,
+        "sharpe_gt_1_5": true,
+        "p95_daily_loss_lt_2pct": true,
+        "no_day_lt_neg_5pct": "True"
+      },
+      "n_trading_days": 825
+    },
+    "risk_parity": {
+      "weights": {
+        "qqq-ic-extension": 0.14345689026433767,
+        "spy-bear-call-post-spike-fade": 0.23132545195215048,
+        "spy-bull-put-elevated-vol": 0.11935394092953085,
+        "spy-ic-regime-recovery": 0.09648455489301071,
+        "spy-iron-fly-low-vvix": 0.2028974217938012,
+        "spy-tight-ic-aggressive": 0.12447822573511512,
+        "aryan_optimized_legacy": 0.08200351443205398
+      },
+      "sharpe": 5.144225819678354,
+      "max_dd_dollar": 1257.606461673713,
+      "max_dd_pct": 0.02515212923347426,
+      "p95_daily_loss": -0.002025542361178628,
+      "worst_day": -739.2098658164449,
+      "worst_day_date": "2025-05-12",
+      "circuit_breaker_days": 0,
+      "aggregate_passes": {
+        "max_dd_lt_15pct": true,
+        "sharpe_gt_1_5": true,
+        "p95_daily_loss_lt_2pct": true,
+        "no_day_lt_neg_5pct": "True"
+      },
+      "n_trading_days": 825
+    },
+    "mean_variance_40cap": {
+      "weights": {
+        "qqq-ic-extension": 4.954803928258755e-17,
+        "spy-bear-call-post-spike-fade": 0.17330441877503044,
+        "spy-bull-put-elevated-vol": 0.0,
+        "spy-ic-regime-recovery": 9.378348791999613e-18,
+        "spy-iron-fly-low-vvix": 0.4,
+        "spy-tight-ic-aggressive": 0.3663966149048968,
+        "aryan_optimized_legacy": 0.06029896632007284
+      },
+      "sharpe": 5.67861813491831,
+      "max_dd_dollar": 797.7241475378978,
+      "max_dd_pct": 0.015954482950757957,
+      "p95_daily_loss": -0.0006786320906162908,
+      "worst_day": -710.4270813687856,
+      "worst_day_date": "2025-05-12",
+      "circuit_breaker_days": 0,
+      "aggregate_passes": {
+        "max_dd_lt_15pct": true,
+        "sharpe_gt_1_5": true,
+        "p95_daily_loss_lt_2pct": true,
+        "no_day_lt_neg_5pct": "True"
+      },
+      "n_trading_days": 825
+    }
+  },
+  "stress_tests": [
+    {
+      "name": "2023_full",
+      "start": "2023-01-01",
+      "end": "2023-12-31",
+      "n_days": 250,
+      "total_pnl": 12484.215714285714,
+      "max_dd_dollar": 321.1328571428603,
+      "max_dd_pct": 0.006422657142857206,
+      "worst_day": -285.12571428571425,
+      "worst_day_date": "2023-03-17"
+    },
+    {
+      "name": "2024_full",
+      "start": "2024-01-01",
+      "end": "2024-12-31",
+      "n_days": 252,
+      "total_pnl": 28250.992857142854,
+      "max_dd_dollar": 680.9157142857148,
+      "max_dd_pct": 0.013618314285714295,
+      "worst_day": -526.0428571428572,
+      "worst_day_date": "2024-12-18"
+    },
+    {
+      "name": "apr_2025_vix_spike",
+      "start": "2025-03-15",
+      "end": "2025-05-15",
+      "n_days": 43,
+      "total_pnl": 6334.515714285714,
+      "max_dd_dollar": 1718.768571428569,
+      "max_dd_pct": 0.03437537142857138,
+      "worst_day": -774.592857142857,
+      "worst_day_date": "2025-05-12"
+    },
+    {
+      "name": "oct_2025_drawdown",
+      "start": "2025-09-15",
+      "end": "2025-11-15",
+      "n_days": 45,
+      "total_pnl": 6664.047142857143,
+      "max_dd_dollar": 713.7928571428565,
+      "max_dd_pct": 0.01427585714285713,
+      "worst_day": -713.7928571428571,
+      "worst_day_date": "2025-10-10"
+    },
+    {
+      "name": "recent_q1_2026",
+      "start": "2026-01-01",
+      "end": "2026-04-17",
+      "n_days": 73,
+      "total_pnl": 12066.76857142857,
+      "max_dd_dollar": 445.49000000000524,
+      "max_dd_pct": 0.008909800000000105,
+      "worst_day": -445.49,
+      "worst_day_date": "2026-04-17"
+    }
+  ],
+  "correlation_matrix": {
+    "qqq-ic-extension": {
+      "qqq-ic-extension": 1.0,
+      "spy-bear-call-post-spike-fade": 0.7760128167258933,
+      "spy-bull-put-elevated-vol": 0.7474033923103727,
+      "spy-ic-regime-recovery": 0.6027756952202333,
+      "spy-iron-fly-low-vvix": 0.5326296585446777,
+      "spy-tight-ic-aggressive": 0.7764088028753482,
+      "aryan_optimized_legacy": 0.598671290893141
+    },
+    "spy-bear-call-post-spike-fade": {
+      "qqq-ic-extension": 0.7760128167258933,
+      "spy-bear-call-post-spike-fade": 1.0,
+      "spy-bull-put-elevated-vol": 0.8764063094366538,
+      "spy-ic-regime-recovery": 0.7160736475855167,
+      "spy-iron-fly-low-vvix": 0.5016932662446801,
+      "spy-tight-ic-aggressive": 0.7154405390777121,
+      "aryan_optimized_legacy": 0.5928347090536907
+    },
+    "spy-bull-put-elevated-vol": {
+      "qqq-ic-extension": 0.7474033923103727,
+      "spy-bear-call-post-spike-fade": 0.8764063094366538,
+      "spy-bull-put-elevated-vol": 1.0,
+      "spy-ic-regime-recovery": 0.6606595578722918,
+      "spy-iron-fly-low-vvix": 0.5201372463015416,
+      "spy-tight-ic-aggressive": 0.8230838173348325,
+      "aryan_optimized_legacy": 0.5824413449039479
+    },
+    "spy-ic-regime-recovery": {
+      "qqq-ic-extension": 0.6027756952202333,
+      "spy-bear-call-post-spike-fade": 0.7160736475855167,
+      "spy-bull-put-elevated-vol": 0.6606595578722918,
+      "spy-ic-regime-recovery": 1.0,
+      "spy-iron-fly-low-vvix": 0.3931409919421653,
+      "spy-tight-ic-aggressive": 0.5743100846300291,
+      "aryan_optimized_legacy": 0.49281984932495
+    },
+    "spy-iron-fly-low-vvix": {
+      "qqq-ic-extension": 0.5326296585446777,
+      "spy-bear-call-post-spike-fade": 0.5016932662446801,
+      "spy-bull-put-elevated-vol": 0.5201372463015416,
+      "spy-ic-regime-recovery": 0.3931409919421653,
+      "spy-iron-fly-low-vvix": 1.0,
+      "spy-tight-ic-aggressive": 0.49781192012364983,
+      "aryan_optimized_legacy": 0.4426155978048171
+    },
+    "spy-tight-ic-aggressive": {
+      "qqq-ic-extension": 0.7764088028753482,
+      "spy-bear-call-post-spike-fade": 0.7154405390777121,
+      "spy-bull-put-elevated-vol": 0.8230838173348325,
+      "spy-ic-regime-recovery": 0.5743100846300291,
+      "spy-iron-fly-low-vvix": 0.49781192012364983,
+      "spy-tight-ic-aggressive": 1.0,
+      "aryan_optimized_legacy": 0.5907831183199624
+    },
+    "aryan_optimized_legacy": {
+      "qqq-ic-extension": 0.598671290893141,
+      "spy-bear-call-post-spike-fade": 0.5928347090536907,
+      "spy-bull-put-elevated-vol": 0.5824413449039479,
+      "spy-ic-regime-recovery": 0.49281984932495,
+      "spy-iron-fly-low-vvix": 0.4426155978048171,
+      "spy-tight-ic-aggressive": 0.5907831183199624,
+      "aryan_optimized_legacy": 1.0
+    }
+  }
+}
