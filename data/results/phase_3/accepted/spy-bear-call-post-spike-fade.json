@@ -1,0 +1,98 @@
+{
+  "bot_id": "spy_bear_call_post_spike_fade",
+  "slug": "spy-bear-call-post-spike-fade",
+  "structure": "vertical_credit",
+  "underlying": "SPY",
+  "tuning": {
+    "n_trials": 30,
+    "best_params": {
+      "short_call_delta": 0.2147826759324114,
+      "short_put_delta": 0.10361038554907828,
+      "long_call_delta": 0.11085830969549341,
+      "long_put_delta": 0.08249802381471341,
+      "dte_idx": 1,
+      "profit_target": 0.35,
+      "stop_loss": 1.5,
+      "time_exit": 14
+    },
+    "best_dsr": 120314761.06950508,
+    "best_raw_sharpe": 10.340655142773574,
+    "best_pnl": 33652.08,
+    "best_n_trades": 260,
+    "best_win_rate": 0.7576923076923077,
+    "best_profit_factor": 5.016072845745792,
+    "best_max_drawdown": 913.5
+  },
+  "cpcv": {
+    "fold_results": [
+      {
+        "fold": 0,
+        "start": "2023-01-03",
+        "end": "2023-08-29",
+        "dsr": -Infinity,
+        "raw_sharpe": 0.0,
+        "n_trades": 6,
+        "win_rate": 0.6666666666666666,
+        "pnl": 651.16,
+        "max_dd": 261.74
+      },
+      {
+        "fold": 1,
+        "start": "2023-08-30",
+        "end": "2024-04-25",
+        "dsr": 63296631.9892369,
+        "raw_sharpe": 11.961939076535458,
+        "n_trades": 40,
+        "win_rate": 0.825,
+        "pnl": 4793.92,
+        "max_dd": 280.38
+      },
+      {
+        "fold": 2,
+        "start": "2024-04-26",
+        "end": "2024-12-19",
+        "dsr": 64375172.68796975,
+        "raw_sharpe": 9.104024229543688,
+        "n_trades": 73,
+        "win_rate": 0.7397260273972602,
+        "pnl": 8897.86,
+        "max_dd": 269.1
+      },
+      {
+        "fold": 3,
+        "start": "2024-12-20",
+        "end": "2025-08-20",
+        "dsr": 64039024.86146585,
+        "raw_sharpe": 9.056485748023283,
+        "n_trades": 76,
+        "win_rate": 0.7631578947368421,
+        "pnl": 10474.78,
+        "max_dd": 913.5
+      },
+      {
+        "fold": 4,
+        "start": "2025-08-21",
+        "end": "2026-04-17",
+        "dsr": 21.418366597217535,
+        "raw_sharpe": 8.981423479995735,
+        "n_trades": 66,
+        "win_rate": 0.7575757575757576,
+        "pnl": 9296.9,
+        "max_dd": 465.17
+      }
+    ],
+    "folds_won_dsr_gt_1": 4,
+    "folds_total": 5,
+    "total_oos_trades": 261,
+    "passes_c4_4_of_5": true,
+    "passes_c5_50_oos_trades": true
+  },
+  "pbo": null,
+  "passes": {
+    "C2_dsr_z_gt_1": true,
+    "C3_pbo_lt_03": "not_evaluated",
+    "C4_cpcv_4_of_5": true,
+    "C5_50_oos_trades": true
+  },
+  "accepted": true
+}

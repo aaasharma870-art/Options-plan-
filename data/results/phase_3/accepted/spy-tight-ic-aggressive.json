@@ -1,0 +1,98 @@
+{
+  "bot_id": "spy_tight_ic_aggressive",
+  "slug": "spy-tight-ic-aggressive",
+  "structure": "iron_condor",
+  "underlying": "SPY",
+  "tuning": {
+    "n_trials": 30,
+    "best_params": {
+      "short_call_delta": 0.27300391575256666,
+      "short_put_delta": 0.0912626064364998,
+      "long_call_delta": 0.08871767539190893,
+      "long_put_delta": 0.05828421326112974,
+      "dte_idx": 2,
+      "profit_target": 0.25,
+      "stop_loss": 1.5,
+      "time_exit": 7
+    },
+    "best_dsr": 176079802.5321007,
+    "best_raw_sharpe": 13.420417924855652,
+    "best_pnl": 142562.15,
+    "best_n_trades": 390,
+    "best_win_rate": 0.9487179487179487,
+    "best_profit_factor": 14.043722711618766,
+    "best_max_drawdown": 1952.33
+  },
+  "cpcv": {
+    "fold_results": [
+      {
+        "fold": 0,
+        "start": "2023-01-03",
+        "end": "2023-08-29",
+        "dsr": 14.875225411300981,
+        "raw_sharpe": 12.862548510454936,
+        "n_trades": 31,
+        "win_rate": 0.9354838709677419,
+        "pnl": 13324.87,
+        "max_dd": 795.69
+      },
+      {
+        "fold": 1,
+        "start": "2023-08-30",
+        "end": "2024-04-25",
+        "dsr": 76667761.21997549,
+        "raw_sharpe": 12.604102303532912,
+        "n_trades": 80,
+        "win_rate": 0.9,
+        "pnl": 23422.06,
+        "max_dd": 1754.25
+      },
+      {
+        "fold": 2,
+        "start": "2024-04-26",
+        "end": "2024-12-19",
+        "dsr": 75386952.29207338,
+        "raw_sharpe": 10.556284789016008,
+        "n_trades": 91,
+        "win_rate": 0.9010989010989011,
+        "pnl": 25123.81,
+        "max_dd": 1543.72
+      },
+      {
+        "fold": 3,
+        "start": "2024-12-20",
+        "end": "2025-08-20",
+        "dsr": 90456374.34332643,
+        "raw_sharpe": 12.197135028238844,
+        "n_trades": 103,
+        "win_rate": 0.9514563106796117,
+        "pnl": 39205.95,
+        "max_dd": 1579.81
+      },
+      {
+        "fold": 4,
+        "start": "2025-08-21",
+        "end": "2026-04-17",
+        "dsr": 106032763.29300675,
+        "raw_sharpe": 15.147537613286676,
+        "n_trades": 103,
+        "win_rate": 0.941747572815534,
+        "pnl": 41210.25,
+        "max_dd": 957.74
+      }
+    ],
+    "folds_won_dsr_gt_1": 5,
+    "folds_total": 5,
+    "total_oos_trades": 408,
+    "passes_c4_4_of_5": true,
+    "passes_c5_50_oos_trades": true
+  },
+  "pbo": null,
+  "passes": {
+    "C2_dsr_z_gt_1": true,
+    "C3_pbo_lt_03": "not_evaluated",
+    "C4_cpcv_4_of_5": true,
+    "C5_50_oos_trades": true
+  },
+  "accepted": true
+}

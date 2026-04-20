@@ -1,0 +1,98 @@
+{
+  "bot_id": "spy_iron_fly_low_vvix",
+  "slug": "spy-iron-fly-low-vvix",
+  "structure": "iron_butterfly",
+  "underlying": "SPY",
+  "tuning": {
+    "n_trials": 30,
+    "best_params": {
+      "short_call_delta": 0.2071366264342846,
+      "short_put_delta": 0.10436971059270929,
+      "long_call_delta": 0.07135244953792613,
+      "long_put_delta": 0.08566622109551965,
+      "dte_idx": 4,
+      "profit_target": 0.35,
+      "stop_loss": 2.0,
+      "time_exit": 7
+    },
+    "best_dsr": 173583972.3500507,
+    "best_raw_sharpe": 22.39644438223227,
+    "best_pnl": 22514.3,
+    "best_n_trades": 244,
+    "best_win_rate": 0.8155737704918032,
+    "best_profit_factor": 5.550375015916197,
+    "best_max_drawdown": 480.82
+  },
+  "cpcv": {
+    "fold_results": [
+      {
+        "fold": 0,
+        "start": "2023-01-03",
+        "end": "2023-08-29",
+        "dsr": -Infinity,
+        "raw_sharpe": 0.0,
+        "n_trades": 3,
+        "win_rate": 1.0,
+        "pnl": 1627.6,
+        "max_dd": 0.0
+      },
+      {
+        "fold": 1,
+        "start": "2023-08-30",
+        "end": "2024-04-25",
+        "dsr": 95038348.50339778,
+        "raw_sharpe": 23.05018525669242,
+        "n_trades": 22,
+        "win_rate": 1.0,
+        "pnl": 6677.78,
+        "max_dd": 0.0
+      },
+      {
+        "fold": 2,
+        "start": "2024-04-26",
+        "end": "2024-12-19",
+        "dsr": 7.059399047089902,
+        "raw_sharpe": 12.100311788957203,
+        "n_trades": 30,
+        "win_rate": 0.9333333333333333,
+        "pnl": 9170.46,
+        "max_dd": 1264.24
+      },
+      {
+        "fold": 3,
+        "start": "2024-12-20",
+        "end": "2025-08-20",
+        "dsr": 119458689.51221175,
+        "raw_sharpe": 25.468678178905993,
+        "n_trades": 27,
+        "win_rate": 1.0,
+        "pnl": 9428.51,
+        "max_dd": 0.0
+      },
+      {
+        "fold": 4,
+        "start": "2025-08-21",
+        "end": "2026-04-17",
+        "dsr": 105822387.46765457,
+        "raw_sharpe": 22.561408814564928,
+        "n_trades": 31,
+        "win_rate": 0.967741935483871,
+        "pnl": 10318.07,
+        "max_dd": 166.76
+      }
+    ],
+    "folds_won_dsr_gt_1": 4,
+    "folds_total": 5,
+    "total_oos_trades": 113,
+    "passes_c4_4_of_5": true,
+    "passes_c5_50_oos_trades": true
+  },
+  "pbo": null,
+  "passes": {
+    "C2_dsr_z_gt_1": true,
+    "C3_pbo_lt_03": "not_evaluated",
+    "C4_cpcv_4_of_5": true,
+    "C5_50_oos_trades": true
+  },
+  "accepted": true
+}

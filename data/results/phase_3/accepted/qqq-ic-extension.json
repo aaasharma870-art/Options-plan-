@@ -1,0 +1,98 @@
+{
+  "bot_id": "qqq_ic_extension",
+  "slug": "qqq-ic-extension",
+  "structure": "iron_condor",
+  "underlying": "QQQ",
+  "tuning": {
+    "n_trials": 30,
+    "best_params": {
+      "short_call_delta": 0.24802225326948396,
+      "short_put_delta": 0.08050012538801686,
+      "long_call_delta": 0.0672826759329993,
+      "long_put_delta": 0.05975347863063451,
+      "dte_idx": 2,
+      "profit_target": 0.35,
+      "stop_loss": 2.0,
+      "time_exit": 21
+    },
+    "best_dsr": 116986411.39679019,
+    "best_raw_sharpe": 9.454223003739802,
+    "best_pnl": 75756.88,
+    "best_n_trades": 231,
+    "best_win_rate": 0.8787878787878788,
+    "best_profit_factor": 6.857351835987394,
+    "best_max_drawdown": 3677.7
+  },
+  "cpcv": {
+    "fold_results": [
+      {
+        "fold": 0,
+        "start": "2023-01-03",
+        "end": "2023-08-29",
+        "dsr": -Infinity,
+        "raw_sharpe": 0.0,
+        "n_trades": 14,
+        "win_rate": 0.9285714285714286,
+        "pnl": 4633.72,
+        "max_dd": 551.06
+      },
+      {
+        "fold": 1,
+        "start": "2023-08-30",
+        "end": "2024-04-25",
+        "dsr": 70482312.88519864,
+        "raw_sharpe": 12.087616937383187,
+        "n_trades": 62,
+        "win_rate": 0.8064516129032258,
+        "pnl": 14235.13,
+        "max_dd": 818.16
+      },
+      {
+        "fold": 2,
+        "start": "2024-04-26",
+        "end": "2024-12-19",
+        "dsr": 50887746.32760547,
+        "raw_sharpe": 7.502988862856333,
+        "n_trades": 80,
+        "win_rate": 0.7125,
+        "pnl": 12878.91,
+        "max_dd": 1387.65
+      },
+      {
+        "fold": 3,
+        "start": "2024-12-20",
+        "end": "2025-08-20",
+        "dsr": 65206251.768385395,
+        "raw_sharpe": 8.792409194797793,
+        "n_trades": 92,
+        "win_rate": 0.75,
+        "pnl": 21160.3,
+        "max_dd": 1588.64
+      },
+      {
+        "fold": 4,
+        "start": "2025-08-21",
+        "end": "2026-04-17",
+        "dsr": 61749406.65736082,
+        "raw_sharpe": 8.912759138981736,
+        "n_trades": 81,
+        "win_rate": 0.7407407407407407,
+        "pnl": 19854.49,
+        "max_dd": 1379.66
+      }
+    ],
+    "folds_won_dsr_gt_1": 4,
+    "folds_total": 5,
+    "total_oos_trades": 329,
+    "passes_c4_4_of_5": true,
+    "passes_c5_50_oos_trades": true
+  },
+  "pbo": null,
+  "passes": {
+    "C2_dsr_z_gt_1": true,
+    "C3_pbo_lt_03": "not_evaluated",
+    "C4_cpcv_4_of_5": true,
+    "C5_50_oos_trades": true
+  },
+  "accepted": true
+}
