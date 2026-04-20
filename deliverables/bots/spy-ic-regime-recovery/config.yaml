@@ -1,0 +1,59 @@
+bot_id: spy-ic-regime-recovery
+version: 1.0.0
+status: phase_3_accepted
+underlying:
+  class: A
+  symbol: SPY
+structure:
+  type: iron_condor
+  short_call_delta: 0.16
+  long_call_delta: 0.05
+  short_put_delta: 0.16
+  long_put_delta: 0.05
+regime_gates:
+- type: regime_transition_from
+  value:
+  - ORANGE
+  - RED
+- type: regime_transition_to
+  value:
+  - GREEN
+  - YELLOW
+- type: vix_max
+  value: 30
+- type: vix_vix3m_max
+  value: 1.05
+- type: ivp_min
+  value: 40
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: 09:45
+exit:
+  profit_target_pct: 25
+  stop_loss_credit_multiple: 2.0
+  time_exit_dte: 21
+  regime_flip_exit: true
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 2
+  allocation_usd: 8000
+tuned_overrides:
+  short_call_delta: 0.22833646487132675
+  short_put_delta: 0.2821488677796205
+  long_call_delta: 0.06240096576940002
+  long_put_delta: 0.059026687064372876
+  dte_idx: 1
+  profit_target: 0.25
+  stop_loss: 2.0
+  time_exit: 21
+validation:
+  deflated_sharpe_z: 129972102.85010615
+  raw_sharpe: 10.853510812831074
+  win_rate: 0.9573170731707317
+  profit_factor: 17.093369584473713
+  n_trades: 164
+  max_drawdown: 4122.25
+  cpcv_folds_won: 4
+  cpcv_folds_total: 5
+  oos_trades: 384

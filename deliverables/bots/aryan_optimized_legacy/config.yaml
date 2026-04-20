@@ -1,0 +1,37 @@
+bot_id: aryan_optimized_legacy
+version: 1.0.0
+status: phase_3_accepted
+underlying:
+  class: A
+  symbol: SPY
+structure:
+  type: iron_condor
+  short_call_delta: 0.18
+  long_call_delta: 0.07
+  short_put_delta: 0.18
+  long_put_delta: 0.07
+regime_gates: []
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: 09:45
+exit:
+  profit_target_pct: 50
+  stop_loss_credit_multiple: 2.0
+  time_exit_dte: 21
+  regime_flip_exit: true
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 3
+  allocation_usd: 10000
+tuned_overrides: {}
+validation:
+  deflated_sharpe_z: null
+  raw_sharpe: null
+  win_rate: null
+  profit_factor: null
+  n_trades: null
+  max_drawdown: null
+  cpcv_folds_won: null
+  cpcv_folds_total: null
+  oos_trades: null

@@ -1,0 +1,61 @@
+bot_id: spy-tight-ic-aggressive
+version: 1.0.0
+status: phase_3_accepted
+underlying:
+  class: A
+  symbol: SPY
+structure:
+  type: iron_condor
+  short_call_delta: 0.12
+  long_call_delta: 0.04
+  short_put_delta: 0.12
+  long_put_delta: 0.04
+regime_gates:
+- type: vix_level_max
+  value: 28
+- type: vix_vix3m_max
+  value: 1.0
+- type: vix_10d_high_max
+  value: 35
+- type: vix_1d_change_max
+  value: 0.25
+- type: ivp_min
+  value: 20
+- type: regime_score_max
+  value: 4
+- type: earnings_blackout
+  value: false
+- type: fomc_cpi_nfp_blackout
+  value: true
+entry:
+  dte_min: 21
+  dte_max: 35
+  scan_time: 09:45
+exit:
+  profit_target_pct: 25
+  stop_loss_credit_multiple: 1.5
+  time_exit_dte: 7
+  regime_flip_exit: true
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 4
+  allocation_usd: 10000
+tuned_overrides:
+  short_call_delta: 0.27300391575256666
+  short_put_delta: 0.0912626064364998
+  long_call_delta: 0.08871767539190893
+  long_put_delta: 0.05828421326112974
+  dte_idx: 2
+  profit_target: 0.25
+  stop_loss: 1.5
+  time_exit: 7
+validation:
+  deflated_sharpe_z: 176079802.5321007
+  raw_sharpe: 13.420417924855652
+  win_rate: 0.9487179487179487
+  profit_factor: 14.043722711618766
+  n_trades: 390
+  max_drawdown: 1952.33
+  cpcv_folds_won: 5
+  cpcv_folds_total: 5
+  oos_trades: 408

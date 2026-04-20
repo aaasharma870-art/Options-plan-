@@ -1,0 +1,58 @@
+bot_id: spy-bull-put-elevated-vol
+version: 1.0.0
+status: phase_3_accepted
+underlying:
+  class: A
+  symbol: SPY
+structure:
+  type: vertical_credit
+  side_bias: bullish
+  short_put_delta: 0.16
+  long_put_delta: 0.05
+regime_gates:
+- type: vix_level_min
+  value: 20
+- type: vix_level_max
+  value: 32
+- type: vix_vix3m_max
+  value: 1.0
+- type: ivp_min
+  value: 40
+- type: spy_above_20d_sma
+  value: true
+- type: regime_score_max
+  value: 4
+- type: fomc_cpi_nfp_blackout
+  value: true
+entry:
+  dte_min: 30
+  dte_max: 45
+  scan_time: 09:45
+exit:
+  profit_target_pct: 25
+  stop_loss_credit_multiple: 1.5
+  time_exit_dte: 7
+  regime_flip_exit: true
+sizing:
+  contracts_per_trade: 1
+  max_concurrent: 3
+  allocation_usd: 8000
+tuned_overrides:
+  short_call_delta: 0.27300391575256666
+  short_put_delta: 0.0912626064364998
+  long_call_delta: 0.08871767539190893
+  long_put_delta: 0.05828421326112974
+  dte_idx: 2
+  profit_target: 0.25
+  stop_loss: 1.5
+  time_exit: 7
+validation:
+  deflated_sharpe_z: 142515392.7945773
+  raw_sharpe: 13.081210255402855
+  win_rate: 0.9485981308411215
+  profit_factor: 12.25718279290862
+  n_trades: 214
+  max_drawdown: 2086.66
+  cpcv_folds_won: 4
+  cpcv_folds_total: 5
+  oos_trades: 263
