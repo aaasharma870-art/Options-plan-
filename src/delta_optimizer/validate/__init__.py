@@ -5,7 +5,11 @@ only the import paths were rewritten.
 """
 
 from delta_optimizer.validate.cpcv import cpcv_split
-from delta_optimizer.validate.dsr import _expected_max_sr, deflated_sharpe_ratio
+from delta_optimizer.validate.dsr import (
+    _expected_max_sr,
+    deflated_sharpe_ratio,
+    deflated_sharpe_z,
+)
 from delta_optimizer.validate.pbo import probability_of_backtest_overfitting
 from delta_optimizer.validate.synthetic_mc import passes_synthetic_gate, synthetic_price_mc
 
