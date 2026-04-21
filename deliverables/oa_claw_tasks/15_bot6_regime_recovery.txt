@@ -1,0 +1,130 @@
+OPTIONS-CLAW TASK: Build Bot 6 — SPY IC Regime Recovery (Rare-Event Bot)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 11
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §15
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 14_bot5_bull_put.txt AND Bot 5 has 2+ weeks paper validation
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Bot 6 trades RARELY — approximately 25 trades per year. It fires only on
+days where the regime score TRANSITIONS from {ORANGE, RED} on day T-1 to
+{GREEN, YELLOW} on day T. Entry trigger comes from Sensor B's
+REGIME_RECOVERY tag.
+
+Because it trades so rarely, paper-trade validation requires LONGER
+— 8+ weeks minimum to accumulate 5+ trades.
+
+=======================================================================
+STEP 1: Bot Shell
+=======================================================================
+
+Name: 6. SPY IC Regime Recovery
+Symbols: SPY
+Allocation: $7,143
+Total open positions: 2
+Daily open positions: 1
+Scan Speed: 5 min
+
+Attach sensors: A, B, C. (NOT D.)
+CRITICAL: Sensor B must be attached — that's where REGIME_RECOVERY
+comes from.
+
+=======================================================================
+STEP 2: Scanner — Recovery Entry Scanner
+=======================================================================
+
+Trigger: every 5 min, 9:45 AM - 3:45 PM.
+
+Decisions:
+
+D1: Recovery state
+  Bot Tag → Bot has tag REGIME_RECOVERY
+  (This is the unique gate. REGIME_RECOVERY is set by Sensor B on
+  days where yesterday was RED but today isn't.)
+
+D2: VIX falling
+  Symbol Indicator: VIX < 25
+
+D3: VIX off peak
+  Symbol Price Change
+  Symbol: VIX
+  Comparison: has DECREASED by at least 15%
+  Timeframe: from 10-day high
+
+D4: Residual premium
+  Symbol Indicator: SPY IV Rank > 40
+
+D5: No Blackout
+  Bot Tag: NOT BLACKOUT
+
+D6: Position count
+  Bot State: Bot open positions < 2
+
+SCREENSHOT.
+
+=======================================================================
+STEP 3: Position — Iron Condor (wider deltas for recovery uncertainty)
+=======================================================================
+
+On YES of D6:
+
+Strategy: Iron Condor
+DTE Range: 25 to 40 days
+Short Deltas: 0.14 to 0.18 (wider than normal IC — recovery uncertainty)
+Long Deltas: 0.05 to 0.07
+Width: $10 (larger absolute credit)
+Min Credit: 18% of width
+Quantity: 1 contract
+
+SCREENSHOT.
+
+=======================================================================
+STEP 4: Exits
+=======================================================================
+
+Exit Options:
+- Profit Target: 40%
+- Stop Loss: 2.0× credit
+- Time Exit: 21 DTE
+- PDT On
+
+Monitor:
+M1: Bot has tag REGIME_RED → Close (thesis fails if vol re-spikes)
+
+SCREENSHOT. Save. Enable.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Name: 6. SPY IC Regime Recovery
+[ ] PAPER mode
+[ ] Sensors A, B, C attached (B is critical)
+[ ] D1 requires REGIME_RECOVERY tag (distinctive gate)
+[ ] D3 checks VIX has dropped 15% from 10-day high
+[ ] Iron Condor with wider short deltas 0.14-0.18
+[ ] Width $10 (not $5)
+[ ] Monitor closes on REGIME_RED re-tag
+
+=======================================================================
+SUMMARY + NEXT
+=======================================================================
+
+Paper 8+ WEEKS (longer than other bots because trade rate is low).
+Need min 5 trades before promotion evaluation.
+
+Promotion per §14.6.6:
+- WR ≥ 65% (lower bar than Bot 4 because gate is already selective)
+- No loss > $500
+- Minimum 5 trades
+
+If 8 weeks pass with fewer than 5 trades: either extend paper longer,
+or accept that the recovery regime just hasn't occurred enough in the
+validation window. Document and wait.
+
+=======================================================================
+END OF TASK 15
+=======================================================================

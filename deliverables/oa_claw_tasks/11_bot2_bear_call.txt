@@ -1,0 +1,194 @@
+OPTIONS-CLAW TASK: Build Bot 2 — SPY Bear Call Post Spike Fade
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 7
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §11
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 10_bot1_iron_fly.txt AND Bot 1 has 2+ weeks of paper
+                    data meeting promotion criteria
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Bot 2 is the second-most-credible synthetic result (75.8% backtested WR,
+effectively matching Aryan's real 77.7% baseline). Bear call vertical
+credit spread, triggered only after VIX spikes with a failed bounce
+confirmation. Provides the only bearish directional exposure in the suite.
+
+This is a Trade Ideas based bot (not Open Position), which is simpler to
+construct than Bot 1.
+
+=======================================================================
+STEP 1: Create Bot Shell
+=======================================================================
+
+1. Bots → + New Bot.
+2. Configure:
+   - Name: 2. SPY Bear Call Post Spike
+   - Symbols: SPY
+   - Allocation: $7,143 (× scaling factor from Task 00)
+   - Total open positions: 2
+   - Daily open positions: 1
+   - SmartPricing: Normal
+   - Scan Speed: 5 min (fast because timing-sensitive entry)
+   - PDT Protection: On
+3. SCREENSHOT.
+4. Create Bot.
+
+=======================================================================
+STEP 2: Attach Sensors
+=======================================================================
+
+Attach shared automations: Sensor A, Sensor B, Sensor C.
+(NOT Sensor D.)
+
+SCREENSHOT.
+
+=======================================================================
+STEP 3: Create Scanner — BC Entry Scanner
+=======================================================================
+
+Scanner name: BC Entry Scanner
+Trigger: Every 5 min, 9:45 AM – 3:45 PM ET, Mon-Fri.
+SCREENSHOT trigger.
+
+Decision chain (all AND, except Decision 1 which is OR):
+
+DECISION 1 (compound OR): Regime Elevated
+  Type: Bot Tag → "Bot has tag"
+  Option A: REGIME_ORANGE_PLUS
+  OR
+  Option B: REGIME_RED
+(The OR logic is intentional. This bot enters in dangerous regimes too
+because its thesis is post-spike mean reversion.)
+
+DECISION 2: No Blackout
+  Bot Tag → Bot does NOT have tag BLACKOUT
+
+DECISION 3: Recent VIX Spike
+  Symbol Price Change
+  Symbol: VIX
+  Comparison: has increased by at least 2 standard deviations (30-day)
+  Timeframe: over last 5 days
+
+DECISION 4: SPY Below 5-day SMA
+  Symbol Indicator Comparison
+  Symbol: SPY
+  First indicator: Last price
+  Comparison: is less than
+  Second indicator: SMA(5) daily
+
+DECISION 5: SPY Short-Term Oversold
+  Symbol Indicator
+  Symbol: SPY
+  Indicator: RSI(2)
+  Comparison: is less than
+  Value: 20
+
+DECISION 6: Elevated IV
+  Symbol Indicator
+  Symbol: SPY
+  Indicator: IV Rank
+  Comparison: is greater than
+  Value: 50
+
+DECISION 7: Position Count
+  Bot State
+  Check: Bot open positions
+  Comparison: is less than
+  Value: 2
+
+SCREENSHOT after each.
+
+=======================================================================
+STEP 4: Position Action (YES path)
+=======================================================================
+
+On YES path of Decision 7, add action: OPEN TRADE IDEA
+
+Configure:
+- Strategy: Short Call Spread (Bear Call)
+- Watchlist: none (SPY only)
+- DTE Range: 14 to 21 days
+- Short Call Delta: 0.16 to 0.22 (target 0.18)
+- Width: $5
+- Min Credit (% width): 25%
+- Min POP: 70%
+- Min Reward/Risk: 0.33
+- Open Interest Min (all legs): 200
+- Quantity: 1 contract
+- Avoid Earnings: Yes (should be automatic since SPY has no earnings
+  but safer to leave on)
+
+SCREENSHOT.
+
+Save Scanner. Enable.
+
+=======================================================================
+STEP 5: Exit Options
+=======================================================================
+
+- Profit Target: 35% of credit received
+- Stop Loss: 1.5× credit received
+- Time Exit: 14 DTE
+- PDT Protection: On
+
+SCREENSHOT.
+
+=======================================================================
+STEP 6: Monitor — BC Exit Monitor
+=======================================================================
+
+Name: BC Exit Monitor
+Trigger: Every 1 minute while position open.
+
+Decisions:
+
+M1: Symbol Indicator
+  Symbol: VIX
+  Indicator: Last price
+  Comparison: is less than
+  Value: 20
+On YES: Close Position (spike has fully faded; move on)
+
+M2: Symbol Indicator Comparison
+  Symbol: SPY
+  First: Last price
+  Comparison: is greater than
+  Second: SMA(5) × 1.015
+On YES: Close Position (rally invalidated)
+
+M3: compound AND
+  Condition 1: Bot has tag REGIME_RED
+  Condition 2: Position DTE < 10
+On YES (both): Close Position
+
+SCREENSHOT. Save Monitor. Enable.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Bot 2 created, allocation $7,143 (scaled), SPY only
+[ ] Sensors A, B, C attached
+[ ] Scanner has 7 decisions, Decision 1 is OR logic
+[ ] Trade Idea action: Short Call Spread, 14-21 DTE, 0.18 delta
+[ ] Exit Options: 35% PT, 1.5× SL, 14 DTE
+[ ] Monitor: 3 exit triggers (VIX<20, SPY rally, REGIME_RED+DTE)
+[ ] Bot in PAPER mode
+[ ] Everything Enabled
+
+=======================================================================
+SUMMARY + NEXT
+=======================================================================
+
+Paper-trade Bot 2 for 2+ weeks. Promotion per §14.2.6 of PDF:
+- WR ≥ 65%
+- No single trade loss > $400
+- Min 8 trades
+
+DO NOT build Bot 3 until Bot 2 meets criteria.
+
+=======================================================================
+END OF TASK 11
+=======================================================================

@@ -1,0 +1,139 @@
+OPTIONS-CLAW TASK: Build Sensor C — Event Blackout
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 4
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §7
+ESTIMATED TIME: 15-20 minutes
+PREREQUISITE TASKS: 01_system_host_bot.txt (Sensor C is independent of A and B)
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Sensor C tags every attached bot with BLACKOUT on days where major
+scheduled economic events are occurring. The three events blocked:
+- FOMC Meeting
+- CPI Release
+- NFP (Non-Farm Payrolls) Release
+
+These are the three events most likely to cause intraday volatility
+spikes that blow out short-premium positions. Every trading bot reads
+the BLACKOUT tag and refuses entry when present.
+
+=======================================================================
+STEP 1: Create Shared Event Automation
+=======================================================================
+
+1. Inside SYSTEM - Regime Sensor Host bot, click "+ New Automation".
+2. Type: EVENT
+3. Name: Sensor C - Event Blackout
+4. Mark as Shared Automation
+5. Trigger: Recurring, 9:30 AM ET, Mon-Fri
+   (Earlier than Sensor A because calendar events can be checked
+   before VIX indicator values are needed.)
+6. SCREENSHOT: trigger configured.
+
+=======================================================================
+STEP 2: Build the Decision Flow
+=======================================================================
+
+Action 1: Untag Bot
+  Tag name: BLACKOUT
+  (Clear yesterday's blackout tag.)
+
+Decision 1: Calendar Event
+  Event type: FOMC Meeting
+  Timeframe: Today
+  Comparison: is (scheduled / occurring)
+
+SCREENSHOT.
+
+On YES branch of Decision 1:
+  Action: Tag Bot → BLACKOUT
+
+On NO branch of Decision 1, continue:
+
+Decision 2: Calendar Event
+  Event type: CPI Release
+  Timeframe: Today
+
+On YES branch of Decision 2:
+  Action: Tag Bot → BLACKOUT
+
+On NO branch, continue:
+
+Decision 3: Calendar Event
+  Event type: NFP Release (or "Non-Farm Payrolls")
+  Timeframe: Today
+
+On YES branch of Decision 3:
+  Action: Tag Bot → BLACKOUT
+
+On NO branch of Decision 3:
+  No action — today is clear.
+
+SCREENSHOT: complete flow with 3 nested decisions.
+
+=======================================================================
+STEP 3: Save and Enable
+=======================================================================
+
+1. Click Save Automation.
+2. Verify Enabled toggle = ON.
+3. Confirm appears in Shared Automations list.
+4. SCREENSHOT.
+
+=======================================================================
+STEP 4: Test Run
+=======================================================================
+
+1. Click Test Run.
+2. SCREENSHOT: test run result showing which decisions evaluated.
+
+3. If today is FOMC/CPI/NFP day:
+   - Expected: BLACKOUT tag present on SYSTEM bot
+4. If today is a normal day:
+   - Expected: BLACKOUT tag absent
+
+5. Verify tags tab matches expectation.
+6. SCREENSHOT: tags tab.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Automation named "Sensor C - Event Blackout"
+[ ] Marked as Shared
+[ ] Trigger: 9:30 AM ET, Mon-Fri
+[ ] Untag BLACKOUT at top
+[ ] Decision 1: FOMC today → YES tags BLACKOUT
+[ ] Decision 2: CPI today → YES tags BLACKOUT
+[ ] Decision 3: NFP today → YES tags BLACKOUT
+[ ] No action if all three are NO
+[ ] Enabled confirmed
+[ ] Test run executed
+
+=======================================================================
+SUMMARY
+=======================================================================
+
+Report to Aryan:
+1. Did Test Run execute successfully?
+2. Is BLACKOUT tag present or absent (and does it match today's calendar)?
+3. Screenshots
+4. If OA's Calendar Event decision types differ from the above, describe
+   what's available
+
+=======================================================================
+ERROR HANDLING
+=======================================================================
+
+- If OA does NOT have a native "Calendar Event" decision for FOMC/CPI/NFP:
+  STOP and describe what calendar/event decision types ARE available.
+  A manual workaround may be needed (custom tag set daily by operator).
+- If events are present but named differently in OA (e.g., "Fed Meeting"
+  instead of "FOMC Meeting"): use OA's exact label and note the mapping
+  in your summary.
+
+=======================================================================
+END OF TASK 04
+=======================================================================

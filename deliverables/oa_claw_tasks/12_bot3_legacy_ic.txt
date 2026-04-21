@@ -1,0 +1,147 @@
+OPTIONS-CLAW TASK: Build Bot 3 — Aryan Optimized Legacy IC (with Regime Gate)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 8
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §12
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 11_bot2_bear_call.txt AND Bot 2 has 2+ weeks paper validation
+
+=======================================================================
+CRITICAL CONTEXT
+=======================================================================
+
+This bot REPLACES the existing live "Aryan Optimized" bot (288 real
+trades, 77.7% WR, 2.77 PF) with a regime-gated version. The goal:
+preserve the known-working strategy while adding the kill-switch that
+would have prevented the original $9,000 loss.
+
+AT END OF BUILD (after 2 weeks clean paper data on this new bot):
+- PAUSE (do NOT delete) the old Aryan Optimized bot
+- Let this new bot take over
+
+=======================================================================
+STEP 1: Bot Shell
+=======================================================================
+
+Name: 3. Aryan Optimized Legacy IC
+Symbols: SPY
+Allocation: $7,143 (or match your old bot's allocation if higher)
+Total open positions: 3
+Daily open positions: 1
+Scan Speed: 5 min
+
+Attach sensors: A, B, C (NOT D).
+
+SCREENSHOT.
+
+=======================================================================
+STEP 2: Scanner — Legacy IC Entry Scanner
+=======================================================================
+
+Trigger: Every 5 min, 9:45 AM - 3:45 PM ET.
+
+Decisions:
+
+D1 (OR): Regime Tradeable
+  Bot Tag → has REGIME_GREEN
+  OR
+  Bot Tag → has REGIME_ORANGE
+
+D2: No Blackout
+  Bot Tag → does NOT have BLACKOUT
+
+D3: VIX Under Control
+  Symbol Indicator: VIX Last price < 25
+
+D4: VIX Term in Contango
+  Symbol Comparison: VIX < VIX3M
+
+D5: Minimum Premium
+  Symbol Indicator: SPY IV Rank > 30
+
+D6: Recent Volatility OK
+  Symbol Indicator: SPY ATR(14) / SPY Last price < 0.018 (1.8%)
+  (Or two-step comparison if OA doesn't allow inline arithmetic.)
+
+D7: Position Count
+  Bot State: Bot open positions < 3
+
+SCREENSHOT after each.
+
+=======================================================================
+STEP 3: Position — Open Trade Idea (Iron Condor)
+=======================================================================
+
+On YES of D7:
+
+Action: Open Trade Idea
+Strategy: Iron Condor
+DTE Range: 30 to 45 days
+Short Strike Deltas: 0.16 to 0.20 (target 0.18)
+Long Strike Deltas: 0.06 to 0.08 (target 0.07)
+Width: $5-10, width-matched
+Min Credit (% width): 15%
+Min POP: 65%
+OI Min per leg: 500
+Bid-Ask Cap: $0.08 per leg
+Quantity: 1 contract
+
+SCREENSHOT.
+
+=======================================================================
+STEP 4: Exits
+=======================================================================
+
+Exit Options:
+- Profit Target: 50% of credit
+- Stop Loss: 2.0× credit
+- Time Exit: 21 DTE
+- PDT Protection: On
+
+Monitor: Legacy IC Exit Monitor
+  Trigger: every 1 min while position open
+  M1: Bot has tag REGIME_RED → Close (kill switch)
+  M2: SPY Last price within $2 of either short strike → Close
+      (Use two nested decisions: abs(SPY - short_call_strike) < 2
+      OR abs(SPY - short_put_strike) < 2, if OA supports it;
+      otherwise simplify to: SPY > short_call_strike - 2.)
+
+SCREENSHOT. Save. Enable.
+
+=======================================================================
+STEP 5: Side-by-Side Paper Comparison
+=======================================================================
+
+CRITICAL: Leave your existing LIVE Aryan Optimized bot RUNNING.
+Bot 3 is in PAPER mode — it runs in parallel and should miss some
+entries the live bot takes (specifically on RED/ORANGE+ days).
+
+Do NOT pause the live bot yet. Let both run for 2 weeks.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Bot created in PAPER mode
+[ ] Name: 3. Aryan Optimized Legacy IC
+[ ] Sensors A, B, C attached
+[ ] Scanner with 7 decisions, D1 is OR
+[ ] Iron Condor params match Worksheet 8
+[ ] Exits: 50% PT, 2× SL, 21 DTE
+[ ] Monitor with REGIME_RED kill and strike-proximity close
+
+=======================================================================
+SUMMARY + NEXT
+=======================================================================
+
+Paper for 2 weeks. Promotion per §14.3.6 of PDF:
+- Trade count within 80-100% of legacy v1's expected count for the
+  same window
+- WR >= legacy v1's historical WR
+- No single trade loss > legacy's worst historical loss × 1.2
+
+Once promoted: THEN pause your old live Aryan Optimized bot and let
+this version take over.
+
+=======================================================================
+END OF TASK 12
+=======================================================================

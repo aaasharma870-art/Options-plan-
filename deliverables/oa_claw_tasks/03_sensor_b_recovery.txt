@@ -1,0 +1,132 @@
+OPTIONS-CLAW TASK: Build Sensor B — Recovery Detector
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 3
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §6 (full context on state machine)
+ESTIMATED TIME: 20-30 minutes
+PREREQUISITE TASKS: 02_sensor_a_regime.txt (must be verified)
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Sensor B detects the transition from RED yesterday → not-RED today. When
+that happens, it sets the REGIME_RECOVERY tag. Bot 6 (ic-regime-recovery)
+uses this tag as its entry trigger.
+
+OA has no "yesterday" lookup natively. The workaround: Sensor A leaves
+a shadow tag REGIME_RED_YESTERDAY each day it tags RED. Sensor B (running
+1 minute later at 9:46 AM) inspects both tags:
+- If REGIME_RED_YESTERDAY is present AND REGIME_RED is NOT → recovery!
+- If REGIME_RED_YESTERDAY is present AND REGIME_RED is still present →
+  still RED, keep the shadow tag for tomorrow.
+
+=======================================================================
+STEP 1: Create Shared Event Automation
+=======================================================================
+
+1. Inside SYSTEM - Regime Sensor Host bot, click "+ New Automation".
+2. Type: EVENT
+3. Name: Sensor B - Recovery Detector
+4. Mark as Shared Automation
+5. Trigger: Recurring, 9:46 AM ET, Mon-Fri
+   NOTE: This is one minute AFTER Sensor A. The delay is intentional
+   to guarantee Sensor A's tags are fresh when Sensor B reads them.
+6. SCREENSHOT: trigger configured.
+
+=======================================================================
+STEP 2: Build the Decision Flow
+=======================================================================
+
+In the flow editor, build from top to bottom:
+
+Action 1: Untag Bot
+  Tag name: REGIME_RECOVERY
+  (Clear any stale recovery tag from previous days.)
+
+Decision 1: Bot has tag
+  Tag name: REGIME_RED_YESTERDAY
+
+SCREENSHOT.
+
+On YES branch of Decision 1:
+  Decision 2 (nested): Bot does NOT have tag
+    Tag name: REGIME_RED
+
+SCREENSHOT.
+
+On YES branch of Decision 2 (i.e., was RED yesterday, not today):
+  Action: Tag Bot → REGIME_RECOVERY
+  Action: Untag Bot → REGIME_RED_YESTERDAY (cleanup, transition done)
+
+On NO branch of Decision 2 (i.e., was RED yesterday, still RED today):
+  Action: Untag Bot → REGIME_RED_YESTERDAY
+  Action: Tag Bot → REGIME_RED_YESTERDAY
+  (This removes and re-adds the shadow tag — effectively a no-op but
+  ensures it persists to tomorrow for the next check.)
+
+On NO branch of Decision 1 (not RED yesterday):
+  No action needed — REGIME_RECOVERY stays cleared.
+
+SCREENSHOT: complete flow.
+
+=======================================================================
+STEP 3: Save and Enable
+=======================================================================
+
+1. Click Save Automation.
+2. Verify Enabled toggle = ON.
+3. Confirm appears in Shared Automations list.
+4. SCREENSHOT: saved automation.
+
+=======================================================================
+STEP 4: Test Run
+=======================================================================
+
+1. Click Test Run.
+2. Expected behavior (since yesterday likely was not RED unless VIX
+   was > 30 yesterday):
+   - Decision 1 evaluates NO
+   - No action taken
+   - REGIME_RECOVERY tag NOT present after run
+3. SCREENSHOT: test run result.
+
+4. Verify SYSTEM bot's tags tab shows:
+   - Current regime tag (from Sensor A)
+   - REGIME_RECOVERY absent (unless yesterday's VIX was > 30 and today's
+     isn't)
+5. SCREENSHOT: tags tab.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Automation named "Sensor B - Recovery Detector"
+[ ] Marked as Shared
+[ ] Trigger: 9:46 AM ET (1 minute after Sensor A), Mon-Fri
+[ ] Untag REGIME_RECOVERY at top
+[ ] Decision 1 checks has-tag REGIME_RED_YESTERDAY
+[ ] Decision 2 (nested on YES) checks does-NOT-have-tag REGIME_RED
+[ ] YES-YES path: Tag RECOVERY + Untag RED_YESTERDAY
+[ ] YES-NO path: Untag + Tag RED_YESTERDAY (preserve)
+[ ] NO branch of Decision 1: no action
+[ ] Enabled confirmed
+[ ] Test run completed without errors
+
+=======================================================================
+SUMMARY + NEXT STEP
+=======================================================================
+
+1. Describe test run outcome (was recovery tag set? why?)
+2. Screenshots
+3. If OA doesn't support nested has-tag / does-NOT-have-tag decisions,
+   describe the workaround you used
+
+Wait for Aryan's approval before running Task 04.
+
+NOTE: Sensor B's true test comes tomorrow if today was RED. Monitor the
+SYSTEM bot's tags for the next few days to confirm the state machine
+transitions correctly.
+
+=======================================================================
+END OF TASK 03
+=======================================================================

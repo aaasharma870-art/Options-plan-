@@ -1,0 +1,257 @@
+OPTIONS-CLAW TASK: Build Bot 1 — SPY Iron Fly Low VVIX (HIGHEST CONFIDENCE)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 6
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §10
+ESTIMATED TIME: 60-90 minutes
+PREREQUISITE TASKS: 01-05 all completed AND sensors verified tagging correctly
+                    for at least 1 trading day.
+
+=======================================================================
+CONTEXT — READ BEFORE BUILDING
+=======================================================================
+
+Bot 1 is the HIGHEST-CONFIDENCE bot in the entire delta-optimizer suite:
+- 81.6% backtested win rate — closest of any bot to Aryan's real-world
+  77.7% baseline
+- Lowest maximum drawdown ($481) of any bot
+- Lowest correlation with other bots (avg 0.49)
+- Mean-variance optimizer assigns it 40% (the per-bot cap)
+
+If only ONE bot gets built, it's this one. Build with care; take
+screenshots at every major step.
+
+PAPER MODE ONLY. No exceptions.
+
+IMPORTANT: Use the CLASSIC Iron Butterfly construction below (ATM body
+0.50Δ, 0.10Δ wings, 7-14 DTE), NOT the Optuna-tuned variant. The classic
+construction is what the synthetic-chain calibration was anchored on,
+so paper-trade performance will match the 81.6% WR prediction more
+faithfully.
+
+=======================================================================
+STEP 1: Create the Bot Shell
+=======================================================================
+
+1. From the Bots page, click "+ New Bot".
+2. Fill in (refer to Worksheet 6):
+   - Name: 1. SPY Iron Fly Low VVIX
+   - Symbols: SPY
+   - Allocation: $7,143 (multiply by the scaling factor from Task 00)
+   - Total open positions: 2
+   - Daily open positions: 1
+   - SmartPricing: Normal
+   - Scan Speed: 5 min (Supercharged — if not available, use Standard
+     15 min and note in summary)
+   - Auto-disable bot: No
+   - PDT Protection: On
+3. SCREENSHOT: completed form.
+4. Click Create Bot.
+5. SCREENSHOT: new bot detail page.
+
+=======================================================================
+STEP 2: Attach Shared Sensors
+=======================================================================
+
+1. On the bot's detail page, find the Automations section.
+2. Click "Attach Shared Automation" (or "Add Existing Automation").
+3. Select and attach each:
+   - Sensor A - Regime Classifier
+   - Sensor B - Recovery Detector
+   - Sensor C - Event Blackout
+4. Do NOT attach Sensor D (this is SPY, not QQQ).
+5. SCREENSHOT: automation list showing all 3 sensors attached and
+   Enabled.
+
+PAUSE POINT 1: Verify all 3 sensors attached. If any fails to attach,
+STOP.
+
+=======================================================================
+STEP 3: Create Scanner Automation — IF Entry Scanner
+=======================================================================
+
+1. Click "+ New Automation" on this bot.
+2. Type: SCANNER
+3. Name: IF Entry Scanner
+4. Do NOT mark as shared (this is bot-specific).
+5. SCREENSHOT.
+
+Configure Trigger:
+- Type: Recurring / schedule-based
+- Frequency: Every 5 minutes
+- Time window: 9:45 AM to 3:45 PM ET
+- Days: Monday through Friday
+- SCREENSHOT.
+
+=======================================================================
+STEP 4: Build the Decision Chain (7 decisions, ALL must pass)
+=======================================================================
+
+Build these decisions in order. Each decision's NO branch ends the scan
+(no position opened). Only if all YES, proceed to Open Position.
+
+DECISION 1: Regime GREEN Required
+  Type: Bot Tag → "Bot has tag"
+  Tag name: REGIME_GREEN
+
+DECISION 2: No Blackout
+  Type: Bot Tag → "Bot does NOT have tag"
+  Tag name: BLACKOUT
+
+DECISION 3: VVIX Low
+  Type: Symbol Indicator
+  Symbol: VVIX
+  Indicator: Last price
+  Comparison: is less than
+  Value: 90
+
+DECISION 4: SPY IV Rank Below 40
+  Type: Symbol Indicator
+  Symbol: SPY
+  Indicator: IV Rank
+  Comparison: is less than
+  Value: 40
+
+DECISION 5: Low Realized Volatility Proxy
+  Type: Symbol Indicator Comparison
+  Symbol: SPY
+  First indicator: ATR(14)
+  Comparison: is less than
+  Second indicator: SMA(ATR(14), 20)
+
+  FALLBACK if "SMA of ATR" not directly supported:
+  - Use two separate decisions instead:
+    Decision 5a: ATR(14) for SPY is less than 0.016 × SPY Last price
+  STOP if you can't build either version.
+
+DECISION 6: No Earnings Cluster Risk
+  Type: Bot Tag → "Bot does NOT have tag"
+  Tag name: CLUSTER_RISK
+
+DECISION 7: Open Position Count
+  Type: Bot State
+  Check: Bot open positions
+  Comparison: is less than
+  Value: 2
+
+SCREENSHOT after each decision is added.
+
+PAUSE POINT 2: Review all 7 decisions in order. Flow should be linear
+(each NO branch terminates, each YES feeds into the next).
+
+=======================================================================
+STEP 5: Add Open Position Action
+=======================================================================
+
+On the YES branch of Decision 7:
+
+Action: Open Position
+
+Configuration:
+- Strategy: Iron Butterfly
+- Width Match: Enabled (symmetric wings)
+- Short Call Delta: 0.50 (tolerance ±0.02)
+- Short Put Delta: 0.50 (tolerance ±0.02)
+- Long Call Delta: 0.10
+- Long Put Delta: 0.10
+- DTE Window: 30 to 45 days, closest to 35
+- Quantity: 1 contract
+- Min Credit: 15% of spread width
+- Bid-Ask Spread Cap: $0.10 per leg
+- Open Interest Min: 500 per leg
+- Probability of Profit Min: N/A (leave blank or default)
+- Order Type: SmartPricing Normal
+- Order Price Target: Mid at entry
+
+SCREENSHOT: completed position criteria.
+
+Click Save Scanner Automation.
+Verify Enabled = ON.
+
+=======================================================================
+STEP 6: Configure Standard Exits (Exit Options Panel)
+=======================================================================
+
+1. Open the bot's Exit Options panel (usually a tab or section on the
+   bot's detail page).
+2. Configure:
+   - Profit Target: 25% of max profit
+   - Stop Loss: 2.0× credit received
+   - Time Exit / Expiration: 21 DTE
+   - PDT Protection: checkbox ON
+3. SCREENSHOT: Exit Options configured.
+
+=======================================================================
+STEP 7: Create Monitor Automation — Advanced Exit Rules
+=======================================================================
+
+1. Click "+ New Automation".
+2. Type: MONITOR
+3. Name: IF Exit Monitor
+4. Trigger: Every 1 minute while position open.
+5. SCREENSHOT.
+
+Build the decision chain (any YES triggers close):
+
+Decision M1: Symbol Indicator
+  Symbol: VVIX
+  Indicator: Last price
+  Comparison: is greater than
+  Value: 120
+On YES: Action: Close Position (thesis invalidated)
+
+Decision M2: Bot Tag → "Bot has tag"
+  Tag name: REGIME_RED
+On YES: Action: Close Position (kill switch)
+
+Decision M3: compound AND
+  Sub-condition 1: Bot has tag BLACKOUT
+  Sub-condition 2: Position DTE < 7
+On YES (both conditions true): Action: Close Position
+
+SCREENSHOT: monitor flow.
+
+Save Monitor. Verify Enabled = ON.
+
+=======================================================================
+STEP 8: Final Pre-Flight Verification
+=======================================================================
+
+[ ] Bot shows PAPER mode (top-right indicator visible on detail page)
+[ ] Name exactly: 1. SPY Iron Fly Low VVIX
+[ ] Allocation correct (scale × 7143)
+[ ] Shared sensors A, B, C attached and Enabled
+[ ] Scanner IF Entry Scanner built with all 7 decisions
+[ ] Position criteria: Iron Butterfly, ATM/0.10 wings, 30-45 DTE
+[ ] Exit Options: 25% PT, 2.0× SL, 21 DTE, PDT on
+[ ] Monitor IF Exit Monitor with VVIX > 120, REGIME_RED, BLACKOUT+DTE<7
+   exits
+[ ] All automations show Enabled toggle = ON
+
+Run a Test Run on the Scanner automation (NOT on the Monitor):
+- Observe which decision the test run evaluates to
+- SCREENSHOT the test trace.
+
+PAUSE POINT 3: If any check fails, STOP and report.
+
+=======================================================================
+SUMMARY REQUIRED
+=======================================================================
+
+1. Confirmation bot exists and is in paper mode
+2. All 8 screenshots in order
+3. Scanner Test Run result — which decision branched to NO first (or
+   did all pass and an attempt to open a position was simulated)?
+4. Any UI differences from the instructions above
+
+The bot is now READY to paper-trade.
+Per the build order, paper-trade Bot 1 for 4 weeks minimum (minimum 10
+trades). Promotion criteria per §14.1.6 of OA_BUILD_MANUAL.pdf:
+- WR ≥ 70%
+- No single trade loss > $400
+- Cumulative P&L positive
+
+DO NOT build Bot 2 until Bot 1 meets promotion criteria.
+
+=======================================================================
+END OF TASK 10
+=======================================================================

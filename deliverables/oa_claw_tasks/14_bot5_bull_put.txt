@@ -1,0 +1,121 @@
+OPTIONS-CLAW TASK: Build Bot 5 — SPY Bull Put Elevated Vol
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 10
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §14
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 13_bot4_tight_ic.txt AND Bot 4 has 2+ weeks paper validation
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Bullish directional exposure. Enters when VIX is elevated (≥ 20) AND SPY
+is trending up (above 20-day SMA). Designed to pair with Bot 2 (bear call)
+for hedging, though synthetic chain shows them at 0.88 correlation. Live
+data should show more independence.
+
+=======================================================================
+STEP 1: Bot Shell
+=======================================================================
+
+Name: 5. SPY Bull Put Elevated Vol
+Symbols: SPY
+Allocation: $7,143
+Total open positions: 3
+Daily open positions: 1
+Scan Speed: 5 min
+
+Attach: A, B, C.
+
+=======================================================================
+STEP 2: Scanner
+=======================================================================
+
+Trigger: every 5 min, 9:45 AM - 3:45 PM.
+
+Decisions:
+
+D1 (OR): Elevated but not extreme
+  Bot Tag: has REGIME_ORANGE
+  OR
+  Bot Tag: has REGIME_ORANGE_PLUS
+
+D2: No Blackout
+  Bot Tag: NOT BLACKOUT
+
+D3: VIX elevated
+  Symbol Indicator: VIX ≥ 20
+
+D4: SPY uptrend
+  Symbol Indicator Comparison: SPY Last price > SPY SMA(20) daily
+
+D5: Not overbought
+  Symbol Indicator: SPY RSI(14) between 40 and 65
+  (Two decisions if "between" not supported: RSI > 40 AND RSI < 65)
+
+D6: High premium
+  Symbol Indicator: SPY IV Rank > 40
+
+D7: Position count
+  Bot State: Bot open positions < 3
+
+SCREENSHOT.
+
+=======================================================================
+STEP 3: Position — Short Put Spread (Bull Put)
+=======================================================================
+
+On YES of D7:
+
+Action: Open Trade Idea → Short Put Spread
+DTE Range: 30 to 45 days
+Short Put Delta: 0.20 to 0.25
+Width: $5
+Min Credit: 28% of width
+Min POP: 68%
+OI Min: 300 per leg
+Avoid Earnings: Yes (SPY has none but keep on)
+Quantity: 1
+
+SCREENSHOT.
+
+=======================================================================
+STEP 4: Exits
+=======================================================================
+
+Exit Options:
+- Profit Target: 50%
+- Stop Loss: 2.0× credit
+- Time Exit: 21 DTE
+- PDT On
+
+Monitor:
+M1: Symbol Indicator Comparison: SPY < SPY SMA(20) → Close
+    (Uptrend broken — close position even if not at PT/SL.)
+M2: Bot has tag REGIME_RED → Close
+
+SCREENSHOT. Save. Enable.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Name: 5. SPY Bull Put Elevated Vol
+[ ] PAPER mode
+[ ] Sensors A, B, C attached
+[ ] D1 OR logic (ORANGE or ORANGE_PLUS)
+[ ] D4 requires SPY > SMA(20) — the trend filter
+[ ] Short put 0.20-0.25, long further OTM
+[ ] Monitor includes SMA breach close
+
+=======================================================================
+SUMMARY + NEXT
+=======================================================================
+
+Paper 2+ weeks, min 8 trades. Promotion per §14.5.6:
+- WR ≥ 75%
+- No loss > $400
+
+=======================================================================
+END OF TASK 14
+=======================================================================

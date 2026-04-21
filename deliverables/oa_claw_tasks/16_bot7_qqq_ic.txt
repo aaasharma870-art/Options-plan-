@@ -1,0 +1,154 @@
+OPTIONS-CLAW TASK: Build Bot 7 — QQQ IC Extension (Diversifier)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 12
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §16
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 15_bot6_regime_recovery.txt (or run in parallel with 15
+                    since this bot is independent)
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Bot 7 is an Iron Condor on QQQ (not SPY). Diversifier off the SPY surface.
+QQQ is ~60% NDX mega-caps, so its vol dynamics diverge from SPY during
+earnings weeks — Sensor D (Earnings Cluster) is specifically for this bot.
+
+This is the ONLY bot that needs all 4 sensors attached (A, B, C, AND D).
+
+=======================================================================
+STEP 1: Bot Shell
+=======================================================================
+
+Name: 7. QQQ IC Extension
+Symbols: QQQ (NOT SPY — critical)
+Allocation: $7,143
+Total open positions: 3
+Daily open positions: 1
+Scan Speed: 5 min
+PDT Protection: On
+
+Attach ALL FOUR sensors: A, B, C, AND D.
+
+Verify in the bot's automations list that D is present and Enabled.
+SCREENSHOT.
+
+=======================================================================
+STEP 2: Scanner — QQQ IC Entry
+=======================================================================
+
+Trigger: every 5 min, 9:45 AM - 3:45 PM.
+
+Decisions:
+
+D1 (OR): Regime tradeable
+  Bot Tag: has REGIME_GREEN
+  OR
+  Bot Tag: has REGIME_ORANGE
+
+D2: No Blackout
+  Bot Tag: NOT BLACKOUT
+
+D3: No Cluster Risk (CRITICAL — unique to this bot)
+  Bot Tag: NOT CLUSTER_RISK
+
+D4: QQQ IV Rank
+  Symbol Indicator: QQQ IV Rank > 30
+  (Note: QQQ-specific IV Rank, not SPY's)
+
+D5: VIX controlled
+  Symbol Indicator: VIX < 22
+
+D6: Term in contango
+  Symbol Comparison: VIX < VIX3M
+
+D7: Position count
+  Bot State: Bot open positions < 3
+
+SCREENSHOT.
+
+=======================================================================
+STEP 3: Position — Iron Condor on QQQ
+=======================================================================
+
+Action: Open Trade Idea → Iron Condor
+Symbol: QQQ (verify the position builder uses QQQ, not SPY)
+DTE Range: 30 to 45 days
+Short Deltas: 0.16 to 0.20
+Long Deltas: 0.06 to 0.08
+Width: $5, matched
+Min Credit: 18% of width
+Min POP: 65%
+OI Min: 300 per leg
+Quantity: 1 contract
+
+SCREENSHOT.
+
+=======================================================================
+STEP 4: Exits
+=======================================================================
+
+Exit Options:
+- Profit Target: 50%
+- Stop Loss: 2.0× credit
+- Time Exit: 21 DTE
+- PDT On
+
+Monitor: QQQ IC Exit Monitor
+M1: Bot has tag REGIME_RED → Close
+M2: compound AND
+    Bot has tag CLUSTER_RISK AND Position DTE < 14 → Close
+    (Avoid earnings-adjacent expirations)
+M3: QQQ Last price within $3 of either short strike → Close
+
+SCREENSHOT. Save. Enable.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Name: 7. QQQ IC Extension
+[ ] Symbol: QQQ (critical — not SPY)
+[ ] PAPER mode
+[ ] ALL FOUR sensors A, B, C, D attached
+[ ] D3 checks NOT CLUSTER_RISK (unique to this bot)
+[ ] IV Rank decision uses QQQ, not SPY
+[ ] Position config references QQQ underlying
+[ ] Monitor M2 uses CLUSTER_RISK + DTE<14 compound
+
+=======================================================================
+SUMMARY + NEXT
+=======================================================================
+
+Paper 2+ weeks, min 10 trades. Promotion per §14.7.6:
+- WR ≥ 70%
+- No loss > $500
+
+Watch for:
+- Trades opening right before mega-cap earnings (sensor D should
+  have blocked — if not, Sensor D logic is incorrect)
+- QQQ's wider bid-ask than SPY (might produce worse fills than
+  Bot 3/4 ICs)
+
+=======================================================================
+END OF TASK 16 — ALL 7 BOTS COMPLETE
+=======================================================================
+
+Once Bot 7 is paper-validated and promoted:
+
+- All 7 trading bots are live in paper or live mode
+- The 4 sensors tag each bot daily with the regime state
+- The suite is deployed per the delta-optimizer architecture
+
+Next operational milestone:
+- 90 days of live data across the suite
+- Evaluate whether to migrate from equal-weight to mean-variance
+  allocation (currently zeros out Bots 5, 6, 7 per synthetic analysis,
+  but real data may show different correlations)
+- Quarterly recalibration (§9 of EXECUTIVE_BUILD_REPORT.md)
+
+Congratulations on making it here. The real work — trusting the numbers
+when they don't match your intuition, respecting the kill switches when
+a trade is going bad, journaling every decision — starts now.
+
+=======================================================================

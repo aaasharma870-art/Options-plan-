@@ -1,0 +1,153 @@
+OPTIONS-CLAW TASK: delta-optimizer Global Setup & Readiness Check
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 0
+ESTIMATED TIME: 5 minutes
+PREREQUISITE TASKS: none (this is the first task)
+
+=======================================================================
+SAFETY RULES (READ BEFORE EVERY TASK)
+=======================================================================
+
+1. You are verifying account settings in Option Alpha (OA) for the
+   delta-optimizer bot suite build. You will NOT create or modify
+   any bots in this task — verification only.
+
+2. If Option Alpha is not already logged in, STOP and ask the operator
+   (Aryan) to log in manually. Do NOT attempt credential entry.
+
+3. Take a screenshot at each STEP marker. Screenshots go to the default
+   screenshot directory for Options-Claw.
+
+4. If any screen differs from the descriptions below (OA UI may have
+   changed since April 2026), STOP and describe what you see. Do NOT
+   guess or improvise.
+
+5. TRADING MODE: If at any point you see LIVE mode active, STOP
+   immediately. The entire delta-optimizer build runs in PAPER.
+
+=======================================================================
+STEP 1: Confirm Paper Trading Mode
+=======================================================================
+
+1. Look at the top-right corner of the OA interface.
+2. It will say either "LIVE" or "PAPER" (may be colored yellow/orange
+   for PAPER, green or red for LIVE).
+3. SCREENSHOT: top-right of the page showing current mode.
+
+CRITICAL: If mode shows LIVE:
+- Click the mode indicator.
+- A dialog will ask to confirm the switch.
+- Click "Switch to Paper" (or equivalent).
+- SCREENSHOT after switching.
+- Verify the indicator now shows PAPER.
+
+If you CANNOT switch to PAPER mode (permissions, no paper account set up,
+etc.), STOP and report to Aryan. Do not proceed.
+
+PAUSE POINT 1: Confirm PAPER mode is active before any further action.
+
+=======================================================================
+STEP 2: Verify Broker Connection
+=======================================================================
+
+1. Click the user/profile icon in the top-right.
+2. From the menu, click "Brokerage Connections" (may also be labeled
+   "Broker Settings" or "Account Integrations").
+3. SCREENSHOT: the connections page.
+
+4. Check that at least ONE broker shows status "Connected":
+   - Tradier
+   - Charles Schwab
+   - TradeStation
+
+5. If any broker shows "Requires Reauthorization":
+   - This will cause bot entries to fail.
+   - Click the broker and complete re-authorization flow.
+   - SCREENSHOT after reauth.
+
+6. If NO broker is connected, STOP and ask Aryan to connect one manually.
+
+=======================================================================
+STEP 3: Verify Timezone
+=======================================================================
+
+1. From the profile icon menu, click "Account Settings".
+2. Navigate to "General" or "Preferences" tab.
+3. Locate the Timezone field.
+4. SCREENSHOT: the timezone setting.
+
+5. Verify timezone is set to "America/New_York" (Eastern Time).
+   If it's anything else (UTC, Pacific, etc.):
+   - Click the timezone dropdown.
+   - Select "America/New_York".
+   - Click Save.
+   - SCREENSHOT after save.
+
+=======================================================================
+STEP 4: Record Account Balance
+=======================================================================
+
+1. Navigate back to the main Dashboard (click "Dashboard" or the OA logo).
+2. Locate the account balance display (usually top card or sidebar).
+3. SCREENSHOT: dashboard showing balance.
+
+4. READ the balance and report it to Aryan in your summary.
+
+5. Calculate the allocation scaling factor:
+   - factor = current_balance / 50000
+   - If current_balance = $50,000 exactly → factor = 1.0
+   - If current_balance = $25,000 → factor = 0.5
+   - If current_balance = $100,000 → factor = 2.0
+
+6. Include this factor in your final summary — later tasks use it to
+   scale per-bot allocations from the $50k baseline.
+
+=======================================================================
+STEP 5: Verify Default Settings
+=======================================================================
+
+1. From Account Settings, locate the Default Bot Settings panel.
+2. SCREENSHOT: the defaults page.
+
+3. Verify these values (note them; do not change):
+   - Default SmartPricing: should be "Normal" (4 prices x 10 seconds)
+   - PDT Protection default: should be checkbox ON
+   - Default Scan Speed: any value (will be overridden per-bot)
+   - Default Exit Options: any value (will be overridden per-bot)
+
+4. If PDT Protection default is OFF, turn it ON and save.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+Confirm ALL of the following before reporting task complete:
+
+[ ] Paper trading mode confirmed active
+[ ] At least one broker shows "Connected" status
+[ ] Timezone set to America/New_York
+[ ] Account balance recorded and scaling factor computed
+[ ] PDT Protection default is ON
+[ ] All screenshots captured (at least 5)
+
+=======================================================================
+SUMMARY REQUIRED
+=======================================================================
+
+Provide Aryan with:
+
+1. Confirmation of PAPER mode active
+2. Which broker(s) are connected (list names)
+3. Current account balance: $______
+4. Scaling factor: ______ (balance ÷ 50,000)
+5. Any settings that were changed (what / old value / new value)
+6. Any screen that LOOKED DIFFERENT from the above descriptions
+   (indicates OA UI may have been updated; flag for follow-up)
+7. All screenshots in order
+
+DO NOT proceed to task 01 (SYSTEM Host Bot creation) until Aryan
+has reviewed this summary and approved.
+
+=======================================================================
+END OF TASK 00
+=======================================================================

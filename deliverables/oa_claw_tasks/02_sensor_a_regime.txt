@@ -1,0 +1,281 @@
+OPTIONS-CLAW TASK: Build Sensor A — Regime Classifier (Most Important)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 2
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §5.3 through §5.7
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 01_system_host_bot.txt
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+This is the single most important automation in the entire system.
+It runs every morning at 9:45 AM ET and tags every attached bot with
+one of four regime labels (REGIME_GREEN / ORANGE / ORANGE_PLUS / RED)
+based on current VIX metrics. Every trading bot reads this tag to
+decide whether to enter positions today.
+
+This task has the most decision nodes of any in the series. Take your
+time. Screenshot at every decision creation. If unsure about a node,
+STOP rather than guess.
+
+=======================================================================
+SAFETY RULES
+=======================================================================
+
+1. PAPER mode
+2. You are building INSIDE the SYSTEM - Regime Sensor Host bot
+3. Mark the automation as "Shared" — this is CRITICAL. Non-shared
+   automations cannot be attached to other bots.
+4. Screenshot after each decision node creation
+5. If OA's decision node types don't match the ones described (e.g.,
+   no "Symbol Price Change" decision, or OR logic works differently),
+   STOP and describe what's available
+
+=======================================================================
+STEP 1: Navigate to Automation Builder
+=======================================================================
+
+1. From the Bots list, click into "SYSTEM - Regime Sensor Host".
+2. Scroll to the "Automations" section.
+3. Click "+ New Automation" (or "Add Automation").
+4. SCREENSHOT: automation creation dialog.
+
+5. When asked to select the type, choose: EVENT
+   (NOT Scanner, NOT Monitor, NOT Button)
+6. Name the automation: Sensor A - Regime Classifier
+7. CRITICAL: Find and click "Make Shared Automation" (checkbox or toggle).
+   SCREENSHOT showing this option is selected.
+8. Click Next / Configure / Save Header (whatever takes you to the
+   trigger setup).
+
+PAUSE POINT 1: Confirm the automation is marked as Shared. If no such
+option is visible in this OA version, STOP and describe what you see.
+
+=======================================================================
+STEP 2: Configure the Trigger
+=======================================================================
+
+Trigger Type: Recurring Schedule
+Time: 9:45 AM ET
+Days: Monday, Tuesday, Wednesday, Thursday, Friday (check all five)
+Skip market holidays: YES (checkbox)
+
+SCREENSHOT: trigger configuration.
+
+Click Save Trigger (or Continue).
+
+=======================================================================
+STEP 3: Build the Decision Flow — Part 1: Reset Tags
+=======================================================================
+
+In the flow editor, add these 4 actions in sequence at the top:
+
+Action 1: Untag Bot
+  Tag name: REGIME_GREEN
+
+Action 2: Untag Bot
+  Tag name: REGIME_ORANGE
+
+Action 3: Untag Bot
+  Tag name: REGIME_ORANGE_PLUS
+
+Action 4: Untag Bot
+  Tag name: REGIME_RED
+
+SCREENSHOT: flow showing all 4 untag actions at the top.
+
+RATIONALE: We reset all possible regime tags at the start of each run
+so only the tag for today's regime remains after the decision tree fires.
+
+=======================================================================
+STEP 4: Decision 1 — RED Branch (VIX > 30)
+=======================================================================
+
+After the 4 untags, click "+ Add Decision".
+
+Decision type: Symbol Indicator
+  Symbol: VIX
+  Indicator: Last price
+  Comparison: is greater than
+  Value: 30
+
+SCREENSHOT: decision configured.
+
+On the YES branch of this decision, add 3 actions:
+
+Action 1: Tag Bot
+  Tag name: REGIME_RED
+
+Action 2: Tag Bot
+  Tag name: REGIME_RED_YESTERDAY
+  (NOTE: This is a shadow tag used by Sensor B tomorrow.)
+
+Action 3: Tag Bot
+  Tag name: RED_D1
+  (NOTE: Day-streak counter — optional but recommended.)
+
+SCREENSHOT: YES branch completed with all 3 tags.
+
+PAUSE POINT 2: Confirm the YES branch has exactly 3 tag actions.
+
+=======================================================================
+STEP 5: Decision 2 — ORANGE_PLUS Branch (compound OR)
+=======================================================================
+
+On the NO branch of Decision 1, click "+ Add Decision".
+
+This decision uses OR logic — three conditions, any of which triggers
+ORANGE_PLUS. Build as a COMPOUND decision if OA supports it, or as
+nested decisions if not.
+
+CONDITION A (VIX > 25):
+  Decision type: Symbol Indicator
+  Symbol: VIX
+  Indicator: Last price
+  Comparison: is greater than
+  Value: 25
+
+Click "+ Add OR Condition" (or equivalent in OA UI).
+
+CONDITION B (VIX > VIX3M × 1.05):
+  Decision type: Symbol Comparison
+  First symbol: VIX
+  Comparison: is greater than
+  Second symbol: VIX3M
+  Multiplier on second symbol: × 1.05
+
+Click "+ Add OR Condition".
+
+CONDITION C (VIX spiked):
+  Decision type: Symbol Price Change
+  Symbol: VIX
+  Timeframe: 5 days ago
+  Comparison: has increased by at least
+  Measure: 2 standard deviations (30-day std dev)
+
+SCREENSHOT: compound decision with all 3 OR conditions.
+
+On the YES branch of this compound decision:
+
+Action 1: Tag Bot
+  Tag name: REGIME_ORANGE_PLUS
+
+SCREENSHOT.
+
+PAUSE POINT 3: Compound OR logic verification. If OA does NOT allow
+compound decisions with OR, you'll need to build 3 separate nested
+decisions, each with its own YES → Tag REGIME_ORANGE_PLUS and
+sharing the same NO → continue path. STOP and describe OA's decision
+logic if it's not compound-OR capable.
+
+=======================================================================
+STEP 6: Decision 3 — ORANGE Branch (VIX > 20)
+=======================================================================
+
+On the NO branch of Decision 2 (compound OR), add:
+
+Decision type: Symbol Indicator
+  Symbol: VIX
+  Indicator: Last price
+  Comparison: is greater than
+  Value: 20
+
+On YES branch:
+Action: Tag Bot
+  Tag name: REGIME_ORANGE
+
+SCREENSHOT.
+
+=======================================================================
+STEP 7: Default GREEN Path
+=======================================================================
+
+On the NO branch of Decision 3:
+
+Action: Tag Bot
+  Tag name: REGIME_GREEN
+
+SCREENSHOT.
+
+=======================================================================
+STEP 8: Save and Enable
+=======================================================================
+
+1. Scroll to the top of the automation editor.
+2. Click Save Automation.
+3. Verify the automation now has Enabled toggle = ON (on its detail page
+   or in the automation list).
+4. SCREENSHOT: automation saved, status Enabled.
+
+5. Navigate to the Shared Automations section (may be in left sidebar
+   or in the bot's automations list under a "Shared" filter).
+6. Verify "Sensor A - Regime Classifier" appears there with Enabled status.
+7. SCREENSHOT.
+
+=======================================================================
+STEP 9: Test Run
+=======================================================================
+
+1. In the automation editor or detail page, click "Test Run" (or
+   "Simulate" / "Run Now").
+2. Observe the decision flow — which branch(es) evaluate YES for today?
+3. SCREENSHOT: test run result showing decision trace.
+
+4. Verify:
+   - Today's VIX value shown correctly (matches external source if known)
+   - One REGIME_* tag applied
+   - RED_D1, REGIME_RED_YESTERDAY applied only if REGIME_RED was set
+
+5. Go to the SYSTEM bot's "Tags" tab.
+6. Confirm exactly one REGIME_* tag is present.
+7. SCREENSHOT: tags tab.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Automation named "Sensor A - Regime Classifier"
+[ ] Automation marked as Shared
+[ ] Trigger: 9:45 AM ET, Mon-Fri, skip holidays
+[ ] 4 untag actions at top (reset all REGIME_* tags)
+[ ] Decision 1 (VIX > 30): YES branch has 3 tag actions
+[ ] Decision 2 (compound OR with 3 conditions): YES tags ORANGE_PLUS
+[ ] Decision 3 (VIX > 20): YES tags ORANGE
+[ ] Default branch tags GREEN
+[ ] Test Run executed successfully
+[ ] Exactly one REGIME_* tag present on SYSTEM bot after test
+[ ] Enabled status confirmed
+
+=======================================================================
+SUMMARY REQUIRED
+=======================================================================
+
+1. Which regime tag is present after the test run?
+2. Does it match what today's VIX would suggest?
+   (GREEN if VIX < 17, YELLOW if 17-22, etc.)
+3. All screenshots in order
+4. Any decision nodes that required workarounds (e.g., OR logic limitations)
+
+DO NOT proceed to Task 03 (Sensor B) until Aryan verifies the tag is
+correct and approves.
+
+=======================================================================
+ERROR HANDLING
+=======================================================================
+
+Stop-and-describe scenarios:
+
+- "Shared Automation" option not found → STOP, describe automation
+  properties panel
+- "Symbol Price Change" decision type not available → STOP, list
+  available decision types
+- Compound OR not supported → STOP, describe how multiple conditions
+  are handled in this OA version
+- Test Run fails with error → STOP, show the error message
+- More than one REGIME_* tag present after test → STOP; reset logic
+  is broken; describe which tags are present
+
+=======================================================================
+END OF TASK 02
+=======================================================================

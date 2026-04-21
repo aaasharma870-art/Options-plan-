@@ -1,0 +1,148 @@
+OPTIONS-CLAW TASK: Build Sensor D — Earnings Cluster Detector (QQQ bot only)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 5
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §8
+ESTIMATED TIME: 20 minutes
+PREREQUISITE TASKS: 01_system_host_bot.txt
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Sensor D tags bots with CLUSTER_RISK when any of the top-5 QQQ holdings
+has earnings in the next 3 trading days. Only Bot 7 (qqq-ic-extension)
+uses this tag — QQQ is ~60% mega-cap concentrated (NVDA, MSFT, META,
+GOOGL, AMZN), and their earnings create outsized gap risk that the
+regime classifier doesn't capture.
+
+Simplified build: tag CLUSTER_RISK if ANY of the 5 mega-caps has
+earnings within 3 days. More conservative than requiring a true cluster
+but much easier to build in OA.
+
+=======================================================================
+STEP 1: Create Shared Event Automation
+=======================================================================
+
+1. Inside SYSTEM - Regime Sensor Host bot, click "+ New Automation".
+2. Type: EVENT
+3. Name: Sensor D - Earnings Cluster
+4. Mark as Shared Automation
+5. Trigger: Recurring, 9:30 AM ET, Mon-Fri
+6. SCREENSHOT.
+
+=======================================================================
+STEP 2: Check for Simpler Alternative First
+=======================================================================
+
+Before building 5 nested decisions, check if OA's Symbol Earnings Event
+decision supports checking earnings for ALL constituents of an ETF.
+
+If you find an option like:
+  Symbol Earnings Event → Symbol: QQQ → Timeframe: 3 days → check
+  constituent earnings
+
+... then use that single decision and skip to Step 4.
+
+Otherwise, proceed to Step 3 to build 5 nested per-symbol decisions.
+
+Describe in your summary which approach you took.
+
+=======================================================================
+STEP 3: Build Nested Per-Symbol Decisions (fallback)
+=======================================================================
+
+Action 1: Untag Bot → CLUSTER_RISK
+
+Decision 1: Symbol Earnings Event
+  Symbol: NVDA
+  Timeframe: Next 3 trading days
+  Comparison: has earnings
+
+On YES branch: Action → Tag Bot CLUSTER_RISK
+On NO branch: continue to Decision 2
+
+Decision 2: Symbol Earnings Event
+  Symbol: MSFT
+  Timeframe: Next 3 trading days
+
+On YES: Tag CLUSTER_RISK
+On NO: Decision 3
+
+Decision 3: Symbol Earnings Event
+  Symbol: GOOGL (try GOOG as fallback if GOOGL not accepted)
+  Timeframe: Next 3 trading days
+
+On YES: Tag CLUSTER_RISK
+On NO: Decision 4
+
+Decision 4: Symbol Earnings Event
+  Symbol: META
+  Timeframe: Next 3 trading days
+
+On YES: Tag CLUSTER_RISK
+On NO: Decision 5
+
+Decision 5: Symbol Earnings Event
+  Symbol: AMZN
+  Timeframe: Next 3 trading days
+
+On YES: Tag CLUSTER_RISK
+On NO: no action (no cluster risk in next 3 days)
+
+SCREENSHOT: complete flow with 5 nested decisions.
+
+=======================================================================
+STEP 4: Save and Enable
+=======================================================================
+
+1. Click Save Automation.
+2. Verify Enabled toggle = ON.
+3. Confirm appears in Shared Automations list.
+4. SCREENSHOT.
+
+=======================================================================
+STEP 5: Test Run
+=======================================================================
+
+1. Click Test Run.
+2. SCREENSHOT: test result.
+
+3. If any of NVDA/MSFT/GOOGL/META/AMZN has earnings in the next 3 days:
+   - Expected: CLUSTER_RISK tag present on SYSTEM bot
+4. Otherwise:
+   - Expected: CLUSTER_RISK absent
+
+5. Verify tags tab matches.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Automation named "Sensor D - Earnings Cluster"
+[ ] Marked as Shared
+[ ] Trigger: 9:30 AM ET, Mon-Fri
+[ ] Untag CLUSTER_RISK at top
+[ ] Either 1 aggregate decision OR 5 per-symbol nested decisions
+[ ] Each YES path tags CLUSTER_RISK
+[ ] Enabled confirmed
+[ ] Test run executed
+
+=======================================================================
+SUMMARY
+=======================================================================
+
+Report to Aryan:
+1. Which approach used (aggregate QQQ decision OR 5 per-symbol)?
+2. Test run outcome (is CLUSTER_RISK present or absent?)
+3. Which symbols (if any) have earnings in next 3 days per OA's data
+4. Screenshots
+5. If "Symbol Earnings Event" decision doesn't exist, describe what's available
+
+=======================================================================
+END OF TASK 05 — ALL 4 SENSORS NOW COMPLETE
+=======================================================================
+
+After Tasks 02-05 are done and verified, all four shared sensor
+automations exist. Wait until TOMORROW MORNING 9:47 AM ET to confirm
+they fire on schedule and tag the SYSTEM bot correctly. Then you can
+begin Task 10 (first trading bot).

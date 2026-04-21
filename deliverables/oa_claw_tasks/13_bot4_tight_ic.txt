@@ -1,0 +1,129 @@
+OPTIONS-CLAW TASK: Build Bot 4 — SPY Tight IC Aggressive
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 9
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §13
+ESTIMATED TIME: 45-60 minutes
+PREREQUISITE TASKS: 12_bot3_legacy_ic.txt AND Bot 3 has 2+ weeks paper validation
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+Bot 4's synthetic backtest shows 94.9% WR — EXPECT THIS TO BE INFLATED.
+Real-chain paper trading should produce 70-80% WR. If paper data lands
+above 85% WR consistently, that's a flag the synthetic calibration
+didn't catch edge cases.
+
+This bot has the aggressive gate (loose VIX max, IVP min only 20) so it
+trades more frequently than Bots 1-3. Size cautiously.
+
+=======================================================================
+STEP 1: Bot Shell
+=======================================================================
+
+Name: 4. SPY Tight IC Aggressive
+Symbols: SPY
+Allocation: $7,143
+Total open positions: 4
+Daily open positions: 2
+Scan Speed: 5 min
+PDT Protection: On
+
+Attach: A, B, C.
+
+=======================================================================
+STEP 2: Scanner — Tight IC Scanner
+=======================================================================
+
+Trigger: every 5 min, 9:45 AM - 3:45 PM.
+
+Decisions:
+
+D1: Regime GREEN only (STRICT — not ORANGE)
+  Bot Tag → has REGIME_GREEN
+
+D2: No Blackout
+  Bot Tag → NOT BLACKOUT
+
+D3: No Cluster Risk
+  Bot Tag → NOT CLUSTER_RISK
+
+D4: IV Rank moderate
+  Symbol Indicator: SPY IV Rank between 20 and 60
+  (Build as two decisions if OA doesn't support between: IV Rank > 20 AND IV Rank < 60)
+
+D5: VIX low
+  Symbol Indicator: VIX < 18
+
+D6: Term in contango
+  Symbol Comparison: VIX < VIX3M
+
+D7: Position count
+  Bot State: Bot open positions < 4
+
+SCREENSHOT after each.
+
+=======================================================================
+STEP 3: Position — Iron Condor
+=======================================================================
+
+On YES of D7:
+
+Action: Open Trade Idea → Iron Condor
+DTE Range: 25 to 35 days
+Short Deltas: 0.22 to 0.28 (target 0.25 — tighter than legacy)
+Long Deltas: 0.08 to 0.12 (target 0.10)
+Width: $5, matched
+Min Credit: 22% of width (higher bar)
+Min POP: 60%
+OI Min: 500
+Quantity: 1 contract
+
+SCREENSHOT.
+
+=======================================================================
+STEP 4: Exits
+=======================================================================
+
+Exit Options:
+- Profit Target: 40% (higher — take profits faster)
+- Stop Loss: 2.0× credit
+- Time Exit: 21 DTE
+- Touch Exit: SPY within 0.5% of either short strike → Close
+  (Add to the Monitor if Exit Options doesn't support this.)
+
+Monitor: aggressive.
+- Any transition to REGIME_ORANGE_PLUS → close all open positions
+  (add this as: Bot has tag REGIME_ORANGE_PLUS → Close Position)
+- M2: Bot has tag REGIME_RED → Close Position (always)
+
+SCREENSHOT. Save. Enable.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] Name: 4. SPY Tight IC Aggressive
+[ ] PAPER mode
+[ ] Sensors A, B, C attached
+[ ] D1 is strict GREEN only (not ORANGE)
+[ ] D4 is IV Rank 20-60 range
+[ ] D5 is VIX < 18 (stricter than Bot 3's VIX < 25)
+[ ] Tight delta targets 0.22-0.28 / 0.08-0.12
+[ ] PT 40%, SL 2×, Time 21 DTE
+[ ] Monitor includes REGIME_ORANGE_PLUS close trigger
+
+=======================================================================
+SUMMARY + NEXT
+=======================================================================
+
+Paper for 2-4 weeks, min 15 trades. Promotion per §14.4.6:
+- WR ≥ 75% (HIGHER BAR than Bots 1-3, matches synthetic 94.9%)
+- No trade loss > $400
+
+If paper WR is 65-75%, keep on paper.
+If < 65% or > 95% (broken chain modeling), STOP and reconsider.
+
+=======================================================================
+END OF TASK 13
+=======================================================================

@@ -1,0 +1,144 @@
+OPTIONS-CLAW TASK: Create SYSTEM Host Bot (Sensor Container)
+
+REFERENCE: deliverables/OA_BUILD_WORKSHEETS.md → Worksheet 1
+REFERENCE: deliverables/OA_BUILD_MANUAL.pdf → §5.2 Pre-Build Setup
+ESTIMATED TIME: 5-10 minutes
+PREREQUISITE TASKS: 00_global_setup.txt (must be approved first)
+
+=======================================================================
+CONTEXT
+=======================================================================
+
+This bot will NEVER trade. It exists solely as a container to host four
+shared sensor automations (Sensors A, B, C, D) that tag every trading bot
+with the current market regime each morning.
+
+OA requires a minimum bot allocation of $1,000 even for bots that don't
+trade. We satisfy the minimum while setting position limits to 0 so no
+actual trading can happen from this bot.
+
+=======================================================================
+SAFETY RULES
+=======================================================================
+
+1. PAPER mode only (should have been verified in Task 00)
+2. Position limits MUST be 0 — if you accidentally set them > 0 and the
+   bot runs a decision tree that places an order, that's a bug
+3. Screenshot before and after the Create Bot button click
+4. If any field in the bot creation form differs from below, STOP
+
+=======================================================================
+STEP 1: Navigate to Bot Creation
+=======================================================================
+
+1. From the OA Dashboard, click "Bots" in the main navigation.
+2. Click "+ New Bot" button (usually top-right of the bots page).
+3. SCREENSHOT: the bot creation dialog/form.
+
+If the button is labeled differently (e.g., "Create Bot", "Add Bot"),
+that's fine — click it. If there's NO button to create a new bot, STOP.
+
+=======================================================================
+STEP 2: Fill in Bot Creation Form
+=======================================================================
+
+Enter these EXACT values (refer to Worksheet 1 for the canonical list):
+
+Field: Name
+Value: SYSTEM - Regime Sensor Host
+
+Field: Symbols (or "Underlying Symbol" / "Watchlist")
+Value: SPY
+NOTE: Even though this bot doesn't trade, OA requires at least one
+symbol. Use SPY as a placeholder.
+
+Field: Allocation (or "Capital Allocated")
+Value: $1,000
+NOTE: This is the OA minimum. Do NOT set higher.
+
+Field: Total open positions (or "Max open positions")
+Value: 0
+CRITICAL: Must be 0. This prevents any order from being placed.
+
+Field: Daily open positions (or "Max positions per day")
+Value: 0
+CRITICAL: Must be 0.
+
+Field: Broker
+Value: Use whatever broker was confirmed connected in Task 00
+
+Field: SmartPricing
+Value: Normal (default)
+
+Field: Scan Speed
+Value: Standard (15 min, default)
+
+Field: Auto-disable bot
+Value: No (or unchecked)
+
+Field: PDT Protection
+Value: Yes / checkbox ON
+
+SCREENSHOT: the completed form before clicking Create.
+
+PAUSE POINT 1: Review the form. Are all position limits set to 0?
+Is allocation $1,000? If yes, proceed. If any field shows a different
+value than above, STOP and show Aryan.
+
+=======================================================================
+STEP 3: Create the Bot
+=======================================================================
+
+1. Click "Create Bot" (or "Save" / "Submit").
+2. Wait for confirmation message or redirect to the new bot's page.
+3. SCREENSHOT: the bot's detail page after creation.
+
+4. Verify on the bot's detail page:
+   - Name is exactly "SYSTEM - Regime Sensor Host"
+   - Status shows Paper (not Live)
+   - Allocation shows $1,000
+   - Position limits show 0 / 0
+   - Broker matches what was connected
+
+=======================================================================
+STEP 4: Verify Bot Appears in Bot List
+=======================================================================
+
+1. Navigate back to the main Bots page.
+2. Locate "SYSTEM - Regime Sensor Host" in the list.
+3. SCREENSHOT: bot list showing this bot.
+
+4. Note the bot's current status:
+   - Should be either "Inactive" or "Enabled" — doesn't matter which
+     at this stage because it has no automations yet to run.
+
+=======================================================================
+VERIFICATION CHECKLIST
+=======================================================================
+
+[ ] SYSTEM bot created and appears in bot list
+[ ] Name is exactly "SYSTEM - Regime Sensor Host"
+[ ] Allocation is $1,000
+[ ] Total open positions = 0
+[ ] Daily open positions = 0
+[ ] Bot is in PAPER mode
+[ ] Broker connection shown
+[ ] PDT Protection on
+[ ] All 4+ screenshots captured
+
+=======================================================================
+SUMMARY REQUIRED
+=======================================================================
+
+Provide Aryan with:
+
+1. Confirmation bot was created successfully
+2. Bot detail page screenshot showing all settings
+3. Any differences between the form fields and the specification above
+4. Any errors encountered
+
+DO NOT proceed to Task 02 (Sensor A) until Aryan approves.
+
+=======================================================================
+END OF TASK 01
+=======================================================================
