@@ -1,95 +1,226 @@
 # delta-optimizer
 
-**A research pipeline I built (alone, in Python) to keep my options trading bots from blowing up again.**
-
-I am Aryan Sharma, a 16-year-old quantitative trader. Two weeks before I started this project, I lost about $9,000 in a VIX volatility spike — not because the strategy was wrong, but because the bots that ran it had no way of recognizing that the market regime had changed. They kept trading into a crash they could not see. This repository is what I built afterward: a five-phase research system that designs, tunes, validates, and produces deployment specifications for a small suite of credit-spread trading bots — every one of which has a regime gate that would have shut it off on the days the original loss happened.
-
-The repository is roughly 3,000 lines of Python, 175 unit tests (all passing), eleven git commits across nine phase tags, and 35 deliverable documents. The deliverables tell me — and document my work for anyone reviewing it — exactly which fields to type into Option Alpha (the no-code trading platform I use) to rebuild each bot, what the historical performance looks like under the validated model, and which conditions should make me stop trading.
+**A 5-phase research pipeline that designs, tunes, and validates regime-gated credit-spread trading bots for Option Alpha.** The goal: produce a small suite of validated bot specifications whose historical backtests demonstrate that regime gates prevent the tail-event losses that ungated options-selling bots suffer in volatility spikes.
 
 ---
 
-## What I actually built
+## The problem
 
-The system runs as five sequential phases. Each one writes a JSON status file and a checkpoint markdown so that I can pause the pipeline, examine the output, and only proceed if the result passes a numerical gate.
+An ungated short-volatility bot (16–20Δ short, 5–10Δ long iron condor on SPY, 30–45 DTE) achieved a 77.7% win rate and 2.77 profit factor over 288 real trades — right up until an April 2025 VIX spike produced a ~$9,000 single-event loss. The loss was not a strategy failure: it was a gating failure. The bot had no way of recognizing that market regime had changed and kept trading a structurally short-vol position into a crash.
 
-| Phase | What it does | Validation gate |
+The delta-optimizer project exists to answer a question: can we design, tune, and validate a replacement bot suite whose members *do* have regime gates — such that the same historical period produces a profit instead of a catastrophic loss?
+
+## Headline result
+
+**Yes — with honest caveats.** The 7-bot regime-gated portfolio, stress-tested over the April–May 2025 VIX-spike sub-window (43 trading days containing the equivalent of the original blowup event), produced:
+
+| Metric | Value |
+|---|---:|
+| Total P&L | **+$6,335** |
+| Max drawdown | $1,719 (3.4% of $50k starting capital) |
+| Worst single day | -$775 (2025-05-12) |
+| Circuit breaker fires | 0 |
+
+All four master-prompt aggregate gates pass: max DD < 15%, Sharpe > 1.5, p95 daily loss < 2%, no day > -5%.
+
+The caveats are documented in §Limitations below: the backtest uses a synthetic option chain (BSM + VIX-as-IV + SKEW-adjusted skew + a stress-clip patch) because the Polygon Stocks Starter + Options Starter plan does not include historical per-contract option aggregates. Real-chain validation is deferred until the user upgrades the data plan or completes 2+ weeks of paper trading per bot.
+
+## Pipeline architecture
+
+Five sequential phases, each with a numerical validation gate. Phase N+1 does not run until Phase N's status JSON reports pass.
+
+| Phase | Output | Validation gate | Status |
+|---|---|---|---|
+| **0. Data + scaffold** | Content-addressed Polygon cache, rate-limited HTTP client, Yahoo fallback for index data | All unit tests green; data inventory written | ✅ |
+| **1. Regime classifier** | 3-factor score per trading day (VIX level, VIX 252d-percentile, VIX/VIX3M) → 0–6 composite → GREEN/YELLOW/ORANGE/RED bucket | ANOVA p < 0.01 on forward-5d-RV by bucket; Cohen's d > 0.5 | ✅ p=1.13e-29, d=1.49 |
+| **2. Gate discovery** | Pareto frontier of regime-gate parameter sets, evaluated against a frozen benchmark iron condor | CPCV: each gate must win ≥4 of 5 folds on at least one objective | ✅ 8-point frontier |
+| **3. Bot maker (tune + validate)** | Up to 10 thesis-grounded bot proposals, each Optuna-tuned (30 trials, TPE sampler) then CPCV-validated | Per bot: DSR_z > 1.0, ≥4 of 5 CPCV folds, ≥50 OOS trades | ✅ 6 of 6 accepted |
+| **4. Portfolio backtest** | Aggregate simulation of all Phase-3-accepted bots + legacy baseline, across equal-weight / risk-parity / mean-variance allocation | Aggregate Sharpe > 1.5, max DD < 15%, p95 daily loss < 2%, no day > -5% | ✅ all pass |
+| **5. Deliverables** | 35 per-bot files + 5 suite-level docs for manual OA deployment | All bots pass OA-DSL (C1) compatibility validator | ✅ 40 files generated |
+
+## Phase 1 regime classifier — validation
+
+The 3-factor regime score is the highest-confidence artifact in the project. It was validated against real VIX data (Yahoo `^VIX`, `^VIX3M`) with no synthetic data anywhere.
+
+**Forward 5-day realized volatility of SPY, bucketed by regime score:**
+
+| Bucket | n days | mean forward-5d RV | stddev |
+|---|---:|---:|---:|
+| GREEN (score 0-1) | 271 | 0.118 | 0.058 |
+| YELLOW (score 2-3) | 435 | 0.114 | 0.051 |
+| ORANGE (score 4-5) | 70 | 0.184 | 0.158 |
+| RED (score 6) | 43 | 0.249 | 0.190 |
+
+One-way ANOVA across buckets: **p = 1.13 × 10⁻²⁹**, F = 50.0.
+Cohen's d, GREEN vs RED: **1.49** (large effect size; threshold in the pipeline was 0.5).
+
+Interpretation: the regime score discriminates low-forward-vol days from high-forward-vol days with overwhelming statistical significance. RED-bucket days have 2.1× the forward realized volatility of GREEN-bucket days. Chain calibration does not affect this result; it is computed from real VIX data and SPY OHLC alone.
+
+## Phase 3 per-bot results
+
+Six bot proposals were generated, each with a written thesis citing a specific Phase 1 / Phase 2 finding, then tuned via Optuna (30-trial TPE search within a constrained grid) and validated via 5-fold combinatorial purged cross-validation.
+
+| Bot | Structure | Underlying | Synthetic WR | PF | Trades | P&L | Max DD | CPCV folds |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| spy-iron-fly-low-vvix | Iron Butterfly | SPY | **81.6%** | 5.55 | 244 | $22,514 | $481 | 4 of 5 |
+| spy-bear-call-post-spike-fade | Bear Call Vertical | SPY | **75.8%** | 5.02 | 260 | $33,652 | $914 | 4 of 5 |
+| qqq-ic-extension | Iron Condor | QQQ | 87.9% | 6.86 | 231 | $75,757 | $3,678 | 4 of 5 |
+| spy-tight-ic-aggressive | Iron Condor | SPY | 94.9% | 14.04 | 390 | $142,562 | $1,952 | **5 of 5** |
+| spy-bull-put-elevated-vol | Bull Put Vertical | SPY | 94.9% | 12.26 | 214 | $95,437 | $2,087 | 4 of 5 |
+| spy-ic-regime-recovery | Iron Condor | SPY | 95.7% | 17.09 | 164 | $133,537 | $4,122 | 4 of 5 |
+
+Backtest window: 2023-01-03 → 2026-04-17, 825 trading days.
+
+**Read this table honestly:** the two bots with win rates closest to the real-world baseline (77.7% for Aryan Optimized; 58.5% for the existing Iron Butterfly) are spy-bear-call (75.8%) and spy-iron-fly (81.6%). The four bots showing 87–96% win rates are structurally real (all win ≥4 of 5 CPCV folds) but are almost certainly inflated by the synthetic chain — real chains would produce lower but still-profitable numbers. All seven bots pass the OA-DSL compatibility validator (no structure outside {long/short stock, long/short option, vertical credit/debit, iron condor, iron butterfly}).
+
+The per-fold CPCV results are in `data/results/phase_3/accepted/<bot>.json`. For the most robust bot (spy-tight-ic-aggressive, 5 of 5 folds):
+
+| Fold | Period | Trades | WR | P&L | Max DD |
+|---|---|---:|---:|---:|---:|
+| 0 | 2023-01-03 → 2023-08-29 | 31 | 93.5% | $13,325 | $796 |
+| 1 | 2023-08-30 → 2024-04-25 | 80 | 90.0% | $23,422 | $1,754 |
+| 2 | 2024-04-26 → 2024-12-19 | 91 | 90.1% | $25,124 | $1,544 |
+| 3 | 2024-12-20 → 2025-08-20 | 103 | 95.1% | $39,206 | $1,580 |
+| 4 | 2025-08-21 → 2026-04-17 | 103 | 94.2% | $41,210 | $958 |
+
+Cross-period consistency is the signal that matters most; the WR magnitude is inflated but the ranking is informative.
+
+## Phase 4 portfolio backtest
+
+All 6 Phase-3-accepted bots plus the legacy Aryan Optimized (ungated, modeled as the pre-incident baseline), aggregated across three allocation methods. Starting capital: $50,000. Circuit breaker: daily -3% intraday drawdown halts new entries.
+
+| Method | Sharpe | Max DD | Max DD % | p95 daily loss | Worst day | Circuit breaker days |
+|---|---:|---:|---:|---:|---:|---:|
+| equal_weight | 5.03 | $1,719 | 3.4% | -0.28% | -$775 | 0 |
+| risk_parity | 5.14 | $1,258 | 2.5% | -0.20% | -$739 | 0 |
+| **mean_variance (40% per-bot cap)** | **5.68** | **$798** | **1.6%** | **-0.07%** | -$710 | 0 |
+
+Sharpes are calendar-day-basis. All three methods clear all four aggregate validation gates. Mean-variance assigns 0% weight to three of the new bots (qqq-ic-extension, spy-bull-put-elevated-vol, spy-ic-regime-recovery) because their daily-PnL correlation with already-included bots exceeds 0.7 — empirical post-hoc validation of the C7 differentiation constraint.
+
+The synthetic-chain bias means real-chain Sharpes are expected in the 1.5–3.0 range rather than 5+. The relative ranking (mean-variance > risk-parity > equal-weight) should hold; the absolute magnitudes should be discounted.
+
+## Stress test results
+
+Sub-windows of the 2023-2026 cached history, equal-weight allocation:
+
+| Window | Days | Total P&L | Max DD | Max DD % | Worst day |
+|---|---:|---:|---:|---:|---:|
+| 2023 full year | 250 | +$12,484 | $321 | 0.6% | -$285 |
+| 2024 full year | 252 | +$28,251 | $681 | 1.4% | -$526 (2024-12-18 FOMC) |
+| **April 2025 VIX spike** | 43 | **+$6,335** | $1,719 | 3.4% | -$775 (2025-05-12) |
+| October 2025 drawdown | 45 | +$6,664 | $714 | 1.4% | -$714 |
+| Q1 2026 recent | 73 | +$12,067 | $445 | 0.9% | -$445 |
+
+The April 2025 VIX-spike window is the test that justifies the project: a regime-gated portfolio is profitable during the same market event that caused the original ~$9k loss, with maximum drawdown contained to 3.4% of starting capital.
+
+## Pairwise daily-PnL correlation (portfolio differentiation)
+
+|  | qqq | bear-call | bull-put | regime | iron-fly | tight-ic | legacy |
+|---|---|---|---|---|---|---|---|
+| qqq-ic-extension | 1.00 | 0.78 | 0.75 | 0.60 | 0.53 | 0.78 | 0.60 |
+| spy-bear-call-post-spike-fade | 0.78 | 1.00 | 0.88 | 0.72 | 0.50 | 0.72 | 0.59 |
+| spy-bull-put-elevated-vol | 0.75 | 0.88 | 1.00 | 0.66 | 0.52 | 0.82 | 0.58 |
+| spy-ic-regime-recovery | 0.60 | 0.72 | 0.66 | 1.00 | 0.39 | 0.57 | 0.49 |
+| **spy-iron-fly-low-vvix** | **0.53** | **0.50** | **0.52** | **0.39** | **1.00** | **0.50** | **0.44** |
+| spy-tight-ic-aggressive | 0.78 | 0.72 | 0.82 | 0.57 | 0.50 | 1.00 | 0.59 |
+| aryan_optimized_legacy | 0.60 | 0.59 | 0.58 | 0.49 | 0.44 | 0.59 | 1.00 |
+
+The iron-fly bot has the lowest average correlation (0.49) with every other bot in the suite, which is why the mean-variance optimizer assigns it the maximum-allowed 40% weight. The legacy bot correlates < 0.7 with every new bot — the C7 "differentiation vs existing live bots" constraint is satisfied for the entire suite.
+
+## Engineering
+
+- **Python 3.11**, [`uv`](https://docs.astral.sh/uv/) environment management, `pyproject.toml` + `uv.lock`
+- **175 unit tests**, all passing. Includes: regime feature boundary tests, BSM known-answer tests (Hull canonical example), put-call parity Hypothesis property test (200 random samples, 1e-9 tolerance), QuantLib cross-validation (1e-8), iron condor P&L math, OA-DSL compatibility validator
+- **Content-addressed disk cache** for all API responses (SHA256 of endpoint + sorted params), gzip JSON
+- **Token-bucket rate limiter** for Polygon API (5 calls/min Starter plan, auto-probes `X-RateLimit-Limit` headers)
+- **No look-ahead bias** — backtest engine enforces T-close as-of filtering; every mark/exit decision at time T uses only data timestamped ≤ T
+- **Decimal P&L aggregation** throughout; float is confined to the vectorized BSM pricer kernel
+- **11 commits, 9 phase tags** (`phase-0-scaffold` through `phase-5-complete`). Any intermediate state is reproducible via `git checkout <tag>`
+
+## Key statistical results
+
+| Metric | Value | Interpretation |
 |---|---|---|
-| **0. Data + Scaffold** | Builds a content-addressed cache, rate-limited Polygon REST client, Yahoo Finance fallback for index data, and copies a reusable validation suite from a previous project of mine | All tests green; data inventory written |
-| **1. Regime Classifier** | Combines VIX level, VIX 252-day percentile, and VIX/VIX3M ratio into a single 0-6 score per trading day | One-way ANOVA on forward 5-day realized vol must show p < 0.01 between the safest and riskiest days, with Cohen's d > 0.5 |
-| **2. Gate Discovery** | Runs the same benchmark iron-condor strategy across a grid of regime-gate parameters; produces a Pareto frontier | Each candidate must win ≥4 of 5 cross-validation folds on at least one objective |
-| **3. Bot Maker** | Generates written hypothesis ("thesis") files for ≤10 candidate bots, then tunes each via Optuna Bayesian optimization, then validates with combinatorial purged cross-validation and Bailey-López-de-Prado deflated Sharpe ratio | DSR_z > 1.0, ≥4 of 5 CPCV folds win, ≥50 out-of-sample trades |
-| **4. Portfolio Backtest** | Aggregates all accepted bots + my pre-existing legacy bot, compares three allocation methods (equal-weight, risk-parity, mean-variance) | Aggregate Sharpe > 1.5, max drawdown < 15%, no day worse than -5% |
-| **5. Deliverables** | Generates 35 per-bot files + 5 suite-level docs that I read to manually rebuild each bot in Option Alpha's UI | All bots pass the OA-DSL compatibility validator (checks every entry filter / exit type / structural rule against what OA can actually do) |
+| Phase 1 ANOVA p-value | 1.13 × 10⁻²⁹ | Regime score discriminates forward vol with overwhelming significance |
+| Phase 1 Cohen's d (GREEN vs RED) | 1.49 | Effect size "very large" (threshold >0.8) |
+| Phase 3 bots with DSR_z > 1.0 | 6 of 6 | All pass C2 (deflated Sharpe gate, Bailey-LdP Z-score form) |
+| Phase 3 CPCV 4/5 folds won | 6 of 6 | All pass C4 (cross-period stability) |
+| Phase 3 OOS trade counts (min/max) | 113 / 408 | All pass C5 (≥50 OOS trades) |
+| Phase 4 aggregate Sharpe | 5.03–5.68 | Passes Sharpe > 1.5 gate (inflated; real-chain estimate 1.5–3.0) |
+| Phase 4 max drawdown (worst method) | $1,719 (3.4%) | Passes max DD < 15% gate |
 
-The big-picture math is real: ANOVA achieved p = 1.13 × 10⁻²⁹ between the safest and riskiest regime buckets, Cohen's d was 1.49 (large effect size), all six final bot proposals win at least four of five out-of-sample cross-validation folds, the Black-Scholes-Merton pricer I wrote agrees with the QuantLib reference library to 1 × 10⁻⁸, and put-call parity holds as a Hypothesis property test across 200 randomly sampled inputs.
+## Limitations (honest)
 
----
+Several master-prompt requirements were deliberately deferred due to data plan restrictions or compute budget:
 
-## The hard part wasn't the math — it was being honest about what the model couldn't do
+1. **No real-chain validation.** Polygon Stocks Starter + Options Starter denies historical per-contract aggregates (`/v2/aggs/ticker/O:SPY.../range/...` returns 403). The backtest uses a synthetic chain (BSM + VIX-as-ATM-IV + SKEW-adjusted skew + a stress-clip patch calibrated to match the real Aryan Optimized 77.7% win rate). Real-chain swap-in is architected: the chain ingest layer consumes a `ChainProvider` Protocol; implementing a `PolygonChain` against Polygon Options Developer data (or Polygon Flat Files) would allow Phases 2–4 to re-run without architectural changes.
+2. **C3 (PBO) deferred.** Probability of Backtest Overfitting requires an M(trials) × N(folds) IS/OOS matrix, adding ~5× compute per bot. The Phase 3 fast-path gates on C2 (DSR_z > 1), C4 (CPCV 4/5 folds), and C5 (≥50 OOS trades) only. CPCV overlaps in protective value but is not a perfect substitute.
+3. **GEX dimension deferred.** The master prompt called for a 4-factor regime score including SPX Net GEX. The implemented score uses 3 factors because computing GEX requires option chain open-interest data subject to the same 403 restriction. The 3-factor score still achieves p < 10⁻²⁹ separation; adding GEX would tighten gates further (block more days).
+4. **True multi-bot event-driven simulator not built.** The Phase 4 aggregator sums per-bot daily P&Ls rather than simulating cross-bot shared capital at the trade level. Per-underlying position caps and the 35% portfolio BPR limit are post-hoc estimates, not trade-level enforcements.
+5. **Iron Butterfly Legacy / Credit Scanner V3 / Trade Ideas suite not modeled.** Only Aryan Optimized was modeled as the representative legacy bot. Reasons: Iron Butterfly is 0DTE (daily-bar engine too coarse), Credit Scanner V3 requires GEX (deferred), Trade Ideas suite is ambiguously specified.
+6. **Synthetic-inflated win rates on three bots.** spy-tight-ic-aggressive, spy-bull-put-elevated-vol, and spy-ic-regime-recovery all show 94–96% WR in backtest. This is the chain calibration patch being most effective for parameters close to the calibration target (16Δ short / 50% PT / 21d time exit) and less effective for parameter combinations Optuna found in different corners of the grid. Real-chain validation would likely bring these to 75–85%.
 
-Three things from the engineering process I am especially proud of, and also a little wary about telling you because they involve admitting things that didn't go to plan:
+All seven limitations are documented with deployment mitigations in `deliverables/validation_summary.md`.
 
-**1. The historical option chain data I needed didn't exist on my plan.** When I tried to pull historical option prices from Polygon.io to backtest each strategy, every request returned `403 Forbidden` — the per-contract historical price endpoint isn't included in the Stocks Starter + Options Starter subscription I have. Reconstructing the data from the contract reference + per-contract aggregates would have required roughly two million API calls (about nine months of wall-clock time at the rate limit). The options were: (a) pay for a higher subscription tier (real money I couldn't justify yet), (b) buy the bulk Flat Files product, or (c) build a *synthetic* option chain that prices contracts using Black-Scholes-Merton with VIX as the at-the-money implied volatility input. I chose (c), documented the limitation in writing, and built the entire backtest engine to consume an abstract `ChainProvider` interface — meaning the day I do upgrade my data plan, I swap one class implementation and the entire pipeline runs again on real chains.
+## How to trust these numbers
 
-**2. The synthetic chain produced numbers that were too clean.** The first time I ran the gate-discovery backtest, the win rate came back at 93%. My real Aryan Optimized bot has a 77.7% win rate over 288 actual trades. A 93% rate on a strategy that's structurally identical to a real-world 77.7% bot is a flashing red light — it means the model is missing tail risk. I diagnosed the gap (Black-Scholes-Merton has no jump diffusion and the volatility skew isn't asymmetric), patched the chain to clip implied volatility upward on stress days and steepen the put-side skew nonlinearly during shocks, and re-ran the calibration backtest. The new win rate landed at 75.9% — within the range I would expect from real chains, and very close to my real bot's 77.7% baseline. I documented this whole reasoning chain in `validation_summary.md`.
+You cannot trust the absolute P&L, Sharpe, DSR_z, or 90%+ win rates from the synthetic backtest. You can trust:
+- **The regime classifier validation** (real VIX data, p < 10⁻²⁹)
+- **The cross-period stability** (4–5 of 5 CPCV folds win for every accepted bot)
+- **The relative ranking between bots** (chain treats them consistently)
+- **The stress-test direction** (profit during the April 2025 VIX spike is the right sign)
+- **The OA-buildability** (every bot passes the C1 DSL validator)
 
-**3. There's a class of statistical bug that takes one line to introduce and one line to fix, but in between can throw away a project.** The deflated Sharpe ratio, in the formula I copied from the optuna-screener project I wrote earlier, returns a *probability* in [0, 1]. The master prompt for this project specified `DSR > 1.0` as the acceptance gate. That makes the gate mathematically unreachable — every bot would always be rejected. I caught this on the first Phase 3 run when every CPCV fold check was failing. I added a separate function `deflated_sharpe_z()` returning the underlying Z-score (which is the form `> 1.0` means anything for) and wired it into the gating. This is the kind of error nobody warns you about — you have to read your own outputs skeptically.
+The real validation is the 2-week paper-trading period specified in `deliverables/build_order.md` — compare actual paper-trade win rate to the per-bot predicted WR. Matching paper data (within ±15% of predicted) is the condition for live capital deployment.
 
----
+## Repository structure
 
-## The result that made the whole thing worth building
+```
+delta-optimizer/
+├── EXECUTIVE_BUILD_REPORT.md     # 2,800-line operations manual for deployment
+├── PROJECT_BRIEF.md              # the master prompt driving the pipeline
+├── CLAUDE.md                     # AI-session session rules
+├── deliverables/                 # 35 per-bot files + 5 suite-level docs
+├── checkpoints/                  # 6 phase-boundary status reports
+├── proposals/                    # 6 per-bot thesis markdowns
+├── configs/                      # YAML configs per bot + legacy + gate sets
+├── data/results/                 # Phase 1-4 outputs (parquet + JSON + PNG)
+├── src/delta_optimizer/          # pipeline code
+│   ├── ingest/                   # Polygon, FRED, Yahoo, cache, rate limiter
+│   ├── pricing/bsm.py            # Greeks + IV solver
+│   ├── regime/                   # features, score, validation
+│   ├── strategies/               # base, iron_condor, synthetic_chain
+│   ├── backtest/                 # engine, portfolio
+│   ├── optimize/tuner.py         # Optuna + CPCV
+│   └── validate/                 # DSR, PBO, CPCV, OA-DSL compat
+├── scripts/                      # run_phase[0–5].py entry points
+└── tests/unit/                   # 175 unit tests
+```
 
-The portfolio of seven bots (six new bots + my legacy Aryan Optimized with regime gate added) was stress-tested against a sub-window of the cached history covering the **April 2025 VIX spike** — the same volatility event whose cousin caused the original $9,000 loss. With the regime gates active, that sub-window produced a positive +$6,335 in profit and a maximum drawdown of $1,719 (3.4% of starting capital). The thesis that started this project — "the bots needed to know they were in a bad regime" — is now empirically demonstrated.
+## Reproducing the pipeline
 
-The mean-variance allocation method also surfaced something I would not have found by hand: three of the six new bots have over 0.7 daily-return correlation with the others and get assigned a 0% allocation in the optimal portfolio, because they add risk without commensurate diversification benefit. This is the master prompt's hard constraint C7 ("differentiation") being validated post-hoc by the math instead of by my judgment, which is the better way around.
+```bash
+git clone https://github.com/aaasharma870-art/Options-plan-.git
+cd Options-plan-
+cp .env.example .env                          # set MASSIVE_API_KEY
+uv sync --extra dev
+uv run pytest tests/unit -q                   # all 175 tests green
+uv run python scripts/pull_polygon.py --dataset all    # Phase 0 data ingest
+uv run python scripts/run_phase1.py           # ~1 min
+uv run python scripts/run_phase2.py --coarse  # ~15 min
+uv run python scripts/run_phase3.py --n-trials 30 --cpcv-folds 5  # ~2 hrs
+uv run python scripts/run_phase4.py           # ~5 min
+uv run python scripts/run_phase5.py           # ~1 min (generates deliverables)
+```
 
----
-
-## How to read this repository
-
-If you have ten minutes, read in this order:
-
-1. `deliverables/suite_summary.md` — the seven bots and what each one does, in a table
-2. `deliverables/validation_summary.md` — the honest version: what to trust, what to discount, what's still missing
-3. `checkpoints/checkpoint_0_data_ready.md` through `checkpoint_5.md` — the chronological narrative of each phase's outcome and decision points
-4. Any one of `deliverables/bots/<bot>/oa_build_guide.md` — to see the exact field-by-field deployment specification for one strategy
-
-If you have an hour and want to follow the actual code:
-
-- `src/delta_optimizer/regime/score.py` and `regime/features.py` — the regime classifier
-- `src/delta_optimizer/pricing/bsm.py` — the BSM pricer with Greeks and IV solver
-- `src/delta_optimizer/strategies/synthetic_chain.py` — the synthetic chain provider, including the calibration patch
-- `src/delta_optimizer/backtest/engine.py` — the daily-bar backtest loop with no-look-ahead enforcement
-- `src/delta_optimizer/optimize/tuner.py` — the Optuna + CPCV + DSR pipeline
-- `src/delta_optimizer/validate/oa_compat.py` — the constraint validator that ensures every accepted bot is actually buildable in Option Alpha
-
-The phase tags (`phase-0-scaffold` through `phase-5-complete`) make every intermediate state of the project reproducible from a single git checkout.
-
----
-
-## What's not perfect (because being honest about this was the entire lesson)
-
-- The regime score is 3-factor; the 4th factor (gamma exposure / GEX) requires the historical option chain data I don't have. Documented in `validation_summary.md`.
-- The probability-of-backtest-overfitting (PBO) calculation was deferred — the cross-validation in C4 catches a similar class of failure but not the exact one PBO is designed for.
-- The portfolio aggregator runs each bot independently and sums their daily P&L; it does not enforce a per-trade shared buying-power cap. In stressed periods this would be tighter than reported.
-- Real-chain validation against my actual market data is the next step — once I either upgrade my Polygon plan or paper-trade a bot for two weeks and compare actual outcomes to the model's predictions.
-
-I have written down what I would change if I had unlimited budget, and what the order of operations should be (`deliverables/build_order.md`) — paper-trade the most credible bot first for two weeks, validate against the model's prediction, and only promote to live capital if the actual win rate is within ±15% of expected.
-
----
+Every phase writes a `.phase_N_status.json` with validation gate results. The `phase-0-scaffold` through `phase-5-complete` git tags let you check out any intermediate state.
 
 ## Tooling
 
-Python 3.11, [`uv`](https://docs.astral.sh/uv/) for environment management, `httpx` for the HTTP client, `polars` and `pandas` and `duckdb` for data work, `scipy` and `optuna` for the math, `matplotlib` for charts, `pytest` and `hypothesis` for testing. Every external dependency is pinned in `pyproject.toml` and locked in `uv.lock`.
-
-To reproduce any phase from this repository: clone, set a Polygon API key in `.env` (template in `.env.example`), `uv sync --extra dev`, then `uv run python scripts/run_phase<N>.py` for N in 1-5. (Phase 0 is the data ingest pulls and would require my actual API key to fully replay.)
+`httpx` for HTTP, `polars`/`pandas`/`duckdb` for data, `scipy`/`optuna` for the math, `matplotlib` for charts, `pytest`/`hypothesis` for testing, `QuantLib` for BSM cross-validation (`py_vollib` was originally used but has a Python 3.11 compatibility bug in `py_lets_be_rational` that imports `_testcapi`). All external dependencies pinned in `pyproject.toml` and locked in `uv.lock`.
 
 ---
 
-## About me
+## Author
 
-I am 16 years old. I trade options on a small live account through Option Alpha. I taught myself enough statistics, programming, and software engineering to build this on my own over a few weeks. I am applying to college because I would like to keep doing work like this with people who are doing it for a living, and I think I can hold my end of the conversation. The most important thing this project taught me is that the win condition is not "I built something that produced great-looking numbers" — it is "I built something whose limitations I can describe in one paragraph and whose next failure mode I have already started thinking about."
-
-If you have questions, the email associated with my git commits is on every commit.
-
-— Aryan
+Aryan Sharma, 16. Built over several sessions in April 2026. The project is the technical response to a real $9,000 loss in a live options account that ungated bots could not prevent. Correspondence via the email address on the git commits.
